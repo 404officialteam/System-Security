@@ -487,75 +487,155 @@
             }
         }
 
-        /* Phone Landscape Layout */
-        @media (orientation: landscape) and (max-height: 520px) {
+        /* Premium Phone Landscape Layout */
+        @media (orientation: landscape) {
             body {
-                flex-direction: row;
-                flex-wrap: wrap;
-                gap: 8px;
-                padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+                display: grid;
+                grid-template-columns: 1fr 1.35fr;
+                grid-template-rows: auto 1fr auto;
+                grid-template-areas:
+                    "topbar   nav"
+                    "slide    nav"
+                    "timer    tools";
+                gap: 8px 12px;
+                padding: max(6px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+                height: 100vh;
+                height: 100dvh;
+                overflow: hidden;
             }
 
             .top-bar {
-                width: 48%;
+                grid-area: topbar;
                 margin-bottom: 0;
-                padding: 6px 10px;
-            }
-
-            .timer-card {
-                width: calc(52% - 8px);
-                margin-bottom: 0;
-                padding: 6px 10px;
+                padding: 6px 12px;
+                border-radius: 12px;
             }
 
             .slide-info-card {
-                width: 38%;
-                height: calc(100% - 48px);
+                grid-area: slide;
                 margin-bottom: 0;
+                padding: 10px 14px;
+                border-radius: 14px;
+                display: flex;
+                flex-direction: column;
                 justify-content: space-between;
-                padding: 10px;
+                min-height: 0;
+                gap: 6px;
+            }
+
+            .slide-counter-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .slide-fraction {
+                font-size: 1.15rem;
             }
 
             .slide-title-preview {
-                font-size: 0.85rem;
-                min-height: auto;
-                -webkit-line-clamp: 3;
+                font-size: 0.88rem;
+                min-height: 0;
+                line-height: 1.3;
+                -webkit-line-clamp: 2;
+            }
+
+            .timer-card {
+                grid-area: timer;
+                margin-bottom: 0;
+                padding: 6px 12px;
+                border-radius: 10px;
+            }
+
+            .timer-display {
+                font-size: 1.05rem;
+            }
+
+            .timer-btn {
+                padding: 3px 8px;
+                font-size: 0.72rem;
             }
 
             .nav-grid {
-                width: calc(62% - 8px);
-                height: calc(100% - 94px);
+                grid-area: nav;
+                display: grid;
+                grid-template-columns: 1fr 1.8fr;
+                gap: 10px;
                 margin-bottom: 0;
-                flex: none;
-            }
-
-            .tools-bar {
-                width: calc(62% - 8px);
-                margin-bottom: 0;
-                margin-top: auto;
+                height: 100%;
+                min-height: 0;
             }
 
             .btn-touch {
-                border-radius: 12px;
-                flex-direction: row;
+                border-radius: 16px;
+                padding: 8px;
                 gap: 8px;
             }
 
             .btn-icon {
-                font-size: 1.4rem;
-            }
-
-            .btn-touch-next .btn-icon {
                 font-size: 1.8rem;
             }
 
-            .btn-label, .btn-touch-next .btn-label {
-                font-size: 0.9rem;
+            .btn-label {
+                font-size: 0.95rem;
+            }
+
+            .btn-touch-next .btn-icon {
+                font-size: 2.3rem;
+            }
+
+            .btn-touch-next .btn-label {
+                font-size: 1.2rem;
+            }
+
+            .tools-bar {
+                grid-area: tools;
+                margin-bottom: 0;
+                gap: 8px;
+                grid-template-columns: repeat(4, 1fr);
             }
 
             .tool-btn {
-                padding: 6px 2px;
-                font-size: 0.65rem;
+                padding: 6px 4px;
+                font-size: 0.68rem;
+                border-radius: 10px;
+                gap: 3px;
+            }
+
+            .tool-btn svg {
+                width: 17px;
+                height: 17px;
+            }
+
+            /* Drawer in landscape */
+            .slide-list {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .slide-item {
+                padding: 8px 10px;
+            }
+
+            /* Connect overlay in landscape */
+            .connect-overlay {
+                padding: 12px;
+            }
+
+            .connect-card {
+                padding: 16px 22px;
+                max-width: 440px;
+                gap: 10px;
+            }
+
+            .connect-input {
+                padding: 10px;
+                font-size: 1.05rem;
+            }
+
+            .btn-primary {
+                padding: 10px;
             }
         }
 
