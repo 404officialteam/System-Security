@@ -1049,6 +1049,12 @@
                     btnBlackout.classList.toggle('active', isBlackout);
                 }
 
+                if (typeof data.isFullscreen === 'boolean') {
+                    btnFullscreen.classList.toggle('active', data.isFullscreen);
+                    const label = btnFullscreen.querySelector('span');
+                    if (label) label.textContent = data.isFullscreen ? 'Exit' : 'Screen';
+                }
+
                 updateActiveSlideInDrawer();
             }
         }
@@ -1071,42 +1077,8 @@
 
         btnFullscreen.addEventListener('click', () => {
             triggerHaptic(40);
-            
-            // 1. Send signal to master presentation screen
+            // Send command to presentation screen ONLY
             sendCommand({ type: 'FULLSCREEN' });
-
-            // 2. Toggle fullscreen on the phone itself (requires direct user touch gesture)
-            try {
-                const doc = document;
-                const docEl = doc.documentElement;
-                const isPhoneFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
-
-                if (!isPhoneFullscreen) {
-                    if (docEl.requestFullscreen) {
-                        docEl.requestFullscreen().catch(() => {});
-                    } else if (docEl.webkitRequestFullscreen) {
-                        docEl.webkitRequestFullscreen();
-                    } else if (docEl.mozRequestFullScreen) {
-                        docEl.mozRequestFullScreen();
-                    } else if (docEl.msRequestFullscreen) {
-                        docEl.msRequestFullscreen();
-                    }
-                    btnFullscreen.classList.add('active');
-                } else {
-                    if (doc.exitFullscreen) {
-                        doc.exitFullscreen().catch(() => {});
-                    } else if (doc.webkitExitFullscreen) {
-                        doc.webkitExitFullscreen();
-                    } else if (doc.mozCancelFullScreen) {
-                        doc.mozCancelFullScreen();
-                    } else if (doc.msExitFullscreen) {
-                        doc.msExitFullscreen();
-                    }
-                    btnFullscreen.classList.remove('active');
-                }
-            } catch(e) {
-                console.warn('Fullscreen error:', e);
-            }
         });
 
         // Slide Drawer
