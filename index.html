@@ -2543,15 +2543,21 @@
         let remoteFullUrl = '';
         try {
             const loc = window.location;
-            let baseUrl = loc.href.split('#')[0].split('?')[0];
-            if (baseUrl.endsWith('.html')) {
-                baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
-            } else if (!baseUrl.endsWith('/')) {
-                baseUrl += '/';
+            const isLocal = loc.hostname === 'localhost' || loc.hostname === '127.0.0.1' || loc.protocol === 'file:';
+            if (isLocal) {
+                // When running locally, point phone to live HTTPS remote controller so phone can load remote app without local network barriers
+                remoteFullUrl = 'https://404officialteam.github.io/System-Security/remote.html?room=' + peerRoomId;
+            } else {
+                let baseUrl = loc.href.split('#')[0].split('?')[0];
+                if (baseUrl.endsWith('.html')) {
+                    baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
+                } else if (!baseUrl.endsWith('/')) {
+                    baseUrl += '/';
+                }
+                remoteFullUrl = baseUrl + 'remote.html?room=' + peerRoomId;
             }
-            remoteFullUrl = baseUrl + 'remote.html?room=' + peerRoomId;
         } catch(e) {
-            remoteFullUrl = 'remote.html?room=' + peerRoomId;
+            remoteFullUrl = 'https://404officialteam.github.io/System-Security/remote.html?room=' + peerRoomId;
         }
 
         openRemoteTab.href = remoteFullUrl;
@@ -2606,8 +2612,8 @@
                             { urls: 'stun:stun.l.google.com:19302' },
                             { urls: 'stun:stun1.l.google.com:19302' },
                             { urls: 'stun:stun2.l.google.com:19302' },
-                            { urls: 'stun:stun.cloudflare.com:3478' },
-                            { urls: 'stun:global.stun.twilio.com:3478' }
+                            { urls: 'stun:stun3.l.google.com:19302' },
+                            { urls: 'stun:stun4.l.google.com:19302' }
                         ]
                     }
                 });
