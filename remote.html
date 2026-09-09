@@ -1507,7 +1507,7 @@
         }
 
         let reconnectAttempts = 0;
-        const MAX_RECONNECT_ATTEMPTS = 3;
+        const MAX_RECONNECT_ATTEMPTS = 12;
         let connectionAttemptTimer = null;
 
         function scheduleReconnect(delay = 1800) {
@@ -1515,9 +1515,9 @@
             reconnectAttempts++;
             if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
                 console.log('Max reconnect attempts reached. Opening room input modal.');
-                updateConnectionUI('disconnected', 'Deck Not Found');
+                updateConnectionUI('disconnected', 'Deck Offline');
                 if (scannerStatusPrompt) {
-                    scannerStatusPrompt.textContent = 'Could not find slide deck. Please scan QR or enter 5-letter code.';
+                    scannerStatusPrompt.textContent = 'Could not find slide deck. Please check room code or scan QR.';
                     scannerStatusPrompt.style.color = 'var(--accent-amber)';
                 }
                 setTimeout(() => {
@@ -1530,18 +1530,21 @@
                 if (targetRoom && (!conn || !conn.open)) {
                     console.log(`Auto-reconnecting to master (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
                     updateConnectionUI('', 'Reconnecting...');
-                    connectToMaster();
+                    if (!peer || peer.destroyed || peer.disconnected) {
+                        initPeerConnection(targetRoom);
+                    } else {
+                        connectToMaster();
+                    }
                 }
             }, delay);
         }
 
         function initPeerConnection(roomId) {
+            if (!roomId) return;
             targetRoom = roomId.trim().toLowerCase();
             if (!targetRoom.startsWith('sec-slide-')) {
                 targetRoom = 'sec-slide-' + targetRoom;
             }
-
-            reconnectAttempts = 0;
 
             // Sync URL with target room without page reload
             try {
@@ -1561,8 +1564,13 @@
             const phonePeerId = 'phone-' + Math.random().toString(36).substring(2, 8);
             
             try {
+                if (conn) {
+                    try { conn.close(); } catch(e) {}
+                    conn = null;
+                }
                 if (peer) {
                     try { peer.destroy(); } catch(e) {}
+                    peer = null;
                 }
 
                 peer = new Peer(phonePeerId, {
@@ -1576,37 +1584,49 @@
                 });
 
                 peer.on('disconnected', () => {
-                    console.log('Phone peer disconnected, reconnecting...');
-                    try { peer.reconnect(); } catch(e) {}
+                    console.log('Phone peer disconnected from broker, re-initializing...');
+                    stopHeartbeat();
+                    scheduleReconnect(1000);
                 });
 
                 peer.on('error', (err) => {
                     console.error('Peer error:', err);
                     if (err.type === 'peer-unavailable') {
-                        updateConnectionUI('disconnected', 'Room Expired');
-                        if (scannerStatusPrompt) {
-                            scannerStatusPrompt.textContent = 'Room expired! Please scan or enter new code.';
-                            scannerStatusPrompt.style.color = '#ff3366';
+                        if (reconnectAttempts < 3) {
+                            updateConnectionUI('disconnected', 'Finding Deck...');
+                            scheduleReconnect(1500);
+                        } else {
+                            updateConnectionUI('disconnected', 'Room Expired');
+                            if (scannerStatusPrompt) {
+                                scannerStatusPrompt.textContent = 'Room expired! Please scan or enter new code.';
+                                scannerStatusPrompt.style.color = '#ff3366';
+                            }
+                            setTimeout(() => {
+                                openCodeInputModal();
+                            }, 500);
                         }
-                        setTimeout(() => {
-                            openCodeInputModal();
-                        }, 500);
                     } else {
-                        updateConnectionUI('disconnected', 'Signal Error');
-                        scheduleReconnect(2500);
+                        updateConnectionUI('disconnected', 'Signal Retry');
+                        scheduleReconnect(2000);
                     }
                 });
             } catch(e) {
-                console.error(e);
+                console.error('Peer init error:', e);
                 updateConnectionUI('disconnected', 'Init Failed');
+                scheduleReconnect(2500);
             }
         }
 
         function connectToMaster() {
-            if (!peer || !targetRoom) return;
+            if (!targetRoom) return;
+            if (!peer || peer.destroyed || peer.disconnected) {
+                initPeerConnection(targetRoom);
+                return;
+            }
 
             if (conn) {
                 try { conn.close(); } catch(e) {}
+                conn = null;
             }
 
             if (connectionAttemptTimer) clearTimeout(connectionAttemptTimer);
@@ -1621,7 +1641,9 @@
             }, 5500);
 
             try {
-                conn = peer.connect(targetRoom);
+                conn = peer.connect(targetRoom, {
+                    reliable: true
+                });
             } catch(e) {
                 console.error('peer.connect error:', e);
                 scheduleReconnect(1500);
@@ -1655,7 +1677,7 @@
                 console.log('Connection closed');
                 stopHeartbeat();
                 updateConnectionUI('disconnected', 'Reconnecting...');
-                scheduleReconnect(1500);
+                scheduleReconnect(1200);
             });
 
             conn.on('error', (err) => {
@@ -2030,7 +2052,41 @@
 
         roomBadge.addEventListener('click', openCodeInputModal);
         statusDot.parentElement.addEventListener('click', () => {
-            if (!conn || !conn.open) openCodeInputModal();
+            if (!conn || !conn.open) {
+                if (targetRoom) {
+                    triggerHaptic(30);
+                    updateConnectionUI('', 'Connecting...');
+                    reconnectAttempts = 0;
+                    initPeerConnection(targetRoom);
+                } else {
+                    openCodeInputModal();
+                }
+            }
+        });
+
+        // Lifecycle: Auto-reconnect when phone screen wakes up, app un-minimizes, or network connects
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && targetRoom && (!conn || !conn.open)) {
+                console.log('App became visible, auto-reconnecting to deck...');
+                reconnectAttempts = 0;
+                initPeerConnection(targetRoom);
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            if (targetRoom && (!conn || !conn.open)) {
+                console.log('Window focused, auto-reconnecting to deck...');
+                reconnectAttempts = 0;
+                initPeerConnection(targetRoom);
+            }
+        });
+
+        window.addEventListener('online', () => {
+            if (targetRoom && (!conn || !conn.open)) {
+                console.log('Internet back online, auto-reconnecting...');
+                reconnectAttempts = 0;
+                initPeerConnection(targetRoom);
+            }
         });
 
         connectOverlayCloseBtn.addEventListener('click', () => {
