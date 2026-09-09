@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#030712">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Presentation Remote Controller</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="assets/peerjs.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --bg-card: rgba(13, 21, 38, 0.88);
+            --bg-card-border: rgba(0, 240, 255, 0.22);
+            --accent-cyan: #00f0ff;
+            --accent-purple: #8000ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-amber: #ffaa00;
+            --text-main: #f0f6fc;
+            --text-muted: #8b9eb0;
+            --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.1) 0%, transparent 60%),
+                radial-gradient(circle at 50% 100%, rgba(128, 0, 255, 0.08) 0%, transparent 60%);
+            color: var(--text-main);
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 16px);
+            touch-action: manipulation;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            backdrop-filter: blur(12px);
+        }
+
+        .conn-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-amber);
+            box-shadow: 0 0 10px var(--accent-amber);
+            transition: all 0.3s;
+        }
+
+        .status-dot.connected {
+            background: var(--accent-green);
+            box-shadow: 0 0 12px var(--accent-green);
+        }
+
+        .status-dot.disconnected {
+            background: var(--accent-red);
+            box-shadow: 0 0 12px var(--accent-red);
+        }
+
+        .room-tag {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            padding: 4px 10px;
+            border-radius: 8px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Presentation Stopwatch Timer */
+        .timer-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(13, 21, 38, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 8px 14px;
+            margin-bottom: 12px;
+        }
+
+        .timer-display {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #ffffff;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .timer-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .timer-btn:active {
+            transform: scale(0.95);
+            background: rgba(0, 240, 255, 0.2);
+        }
+
+        /* Slide Info Card */
+        .slide-info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .slide-counter-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slide-badge {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .slide-fraction {
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .slide-progress-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .slide-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .slide-title-preview {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.35;
+            min-height: 44px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Main Big Navigation Buttons */
+        .nav-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+            margin-bottom: 12px;
+        }
+
+        .btn-touch {
+            border: none;
+            outline: none;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .btn-touch:active {
+            transform: scale(0.96);
+        }
+
+        .btn-touch-prev {
+            background: rgba(13, 21, 38, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #d1d5db;
+        }
+
+        .btn-touch-prev:active {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-touch-next {
+            background: linear-gradient(145deg, rgba(0, 240, 255, 0.18) 0%, rgba(128, 0, 255, 0.25) 100%);
+            border: 2px solid var(--accent-cyan);
+            color: #ffffff;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.22);
+        }
+
+        .btn-touch-next:active {
+            background: linear-gradient(145deg, rgba(0, 240, 255, 0.35) 0%, rgba(128, 0, 255, 0.45) 100%);
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.45);
+        }
+
+        .btn-icon {
+            font-size: 2.2rem;
+            line-height: 1;
+        }
+
+        .btn-label {
+            font-size: 1.05rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .btn-touch-next .btn-icon {
+            font-size: 2.8rem;
+            color: var(--accent-cyan);
+        }
+
+        .btn-touch-next .btn-label {
+            color: #ffffff;
+            font-size: 1.25rem;
+        }
+
+        /* Tool Toolbar */
+        .tools-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .tool-btn {
+            background: rgba(13, 21, 38, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            border-radius: 12px;
+            padding: 10px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tool-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .tool-btn.active {
+            background: rgba(0, 240, 255, 0.18);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+        }
+
+        .tool-btn:active {
+            transform: scale(0.94);
+        }
+
+        /* Responsive Breakpoints for Mobile Phones */
+        @media (max-width: 480px) {
+            body {
+                padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+                gap: 6px;
+            }
+
+            .top-bar {
+                padding: 8px 12px;
+                margin-bottom: 6px;
+                border-radius: 12px;
+            }
+
+            .conn-status {
+                font-size: 0.78rem;
+            }
+
+            .room-tag {
+                font-size: 0.72rem;
+                padding: 3px 8px;
+            }
+
+            .timer-card {
+                padding: 6px 12px;
+                margin-bottom: 6px;
+                border-radius: 10px;
+            }
+
+            .timer-display {
+                font-size: 1.1rem;
+            }
+
+            .timer-btn {
+                padding: 4px 8px;
+                font-size: 0.72rem;
+            }
+
+            .slide-info-card {
+                padding: 12px;
+                margin-bottom: 8px;
+                border-radius: 14px;
+                gap: 8px;
+            }
+
+            .slide-fraction {
+                font-size: 1.2rem;
+            }
+
+            .slide-badge {
+                font-size: 0.72rem;
+            }
+
+            .slide-title-preview {
+                font-size: 0.95rem;
+                min-height: 38px;
+            }
+
+            .nav-grid {
+                gap: 10px;
+                margin-bottom: 8px;
+            }
+
+            .btn-touch {
+                border-radius: 16px;
+                gap: 6px;
+            }
+
+            .btn-icon {
+                font-size: 1.8rem;
+            }
+
+            .btn-label {
+                font-size: 0.92rem;
+            }
+
+            .btn-touch-next .btn-icon {
+                font-size: 2.3rem;
+            }
+
+            .btn-touch-next .btn-label {
+                font-size: 1.1rem;
+            }
+
+            .tools-bar {
+                gap: 6px;
+                margin-bottom: 4px;
+            }
+
+            .tool-btn {
+                padding: 8px 2px;
+                font-size: 0.68rem;
+                border-radius: 10px;
+            }
+
+            .tool-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
+        /* Very Compact / Short Screen Phones (e.g. SE, small heights or keyboards up) */
+        @media (max-height: 680px) and (orientation: portrait) {
+            .slide-info-card {
+                padding: 8px 10px;
+                margin-bottom: 6px;
+                gap: 4px;
+            }
+            .slide-title-preview {
+                min-height: auto;
+                font-size: 0.85rem;
+                -webkit-line-clamp: 1;
+            }
+            .timer-card {
+                padding: 4px 10px;
+                margin-bottom: 4px;
+            }
+            .timer-display {
+                font-size: 1rem;
+            }
+            .nav-grid {
+                margin-bottom: 6px;
+                gap: 8px;
+            }
+            .btn-touch {
+                border-radius: 14px;
+                gap: 4px;
+            }
+            .btn-icon {
+                font-size: 1.5rem;
+            }
+            .btn-touch-next .btn-icon {
+                font-size: 1.9rem;
+            }
+            .btn-label {
+                font-size: 0.85rem;
+            }
+            .btn-touch-next .btn-label {
+                font-size: 0.95rem;
+            }
+            .tool-btn {
+                padding: 6px 2px;
+                font-size: 0.64rem;
+            }
+            .tool-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
+
+        /* Phone Landscape Layout */
+        @media (orientation: landscape) and (max-height: 520px) {
+            body {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+            }
+
+            .top-bar {
+                width: 48%;
+                margin-bottom: 0;
+                padding: 6px 10px;
+            }
+
+            .timer-card {
+                width: calc(52% - 8px);
+                margin-bottom: 0;
+                padding: 6px 10px;
+            }
+
+            .slide-info-card {
+                width: 38%;
+                height: calc(100% - 48px);
+                margin-bottom: 0;
+                justify-content: space-between;
+                padding: 10px;
+            }
+
+            .slide-title-preview {
+                font-size: 0.85rem;
+                min-height: auto;
+                -webkit-line-clamp: 3;
+            }
+
+            .nav-grid {
+                width: calc(62% - 8px);
+                height: calc(100% - 94px);
+                margin-bottom: 0;
+                flex: none;
+            }
+
+            .tools-bar {
+                width: calc(62% - 8px);
+                margin-bottom: 0;
+                margin-top: auto;
+            }
+
+            .btn-touch {
+                border-radius: 12px;
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            .btn-icon {
+                font-size: 1.4rem;
+            }
+
+            .btn-touch-next .btn-icon {
+                font-size: 1.8rem;
+            }
+
+            .btn-label, .btn-touch-next .btn-label {
+                font-size: 0.9rem;
+            }
+
+            .tool-btn {
+                padding: 6px 2px;
+                font-size: 0.65rem;
+            }
+        }
+
+        /* Laser Touchpad Mode Overlay */
+        .laser-pad {
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 7, 18, 0.96);
+            z-index: 100;
+            padding: 20px;
+            backdrop-filter: blur(16px);
+        }
+
+        .laser-pad.active {
+            display: flex;
+        }
+
+        .laser-pad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .laser-pad-header h4 {
+            font-size: 1.1rem;
+            color: var(--accent-red);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .laser-pad-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .laser-touch-area {
+            flex: 1;
+            background: rgba(13, 21, 38, 0.8);
+            border: 2px dashed rgba(255, 51, 102, 0.4);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: #8b9eb0;
+            touch-action: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .laser-touch-cursor {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 51, 102, 0.8);
+            box-shadow: 0 0 20px #ff3366, 0 0 40px #ff3366;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Slide Drawer / Modal */
+        .drawer {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 7, 18, 0.95);
+            z-index: 100;
+            padding: 20px;
+            flex-direction: column;
+            backdrop-filter: blur(16px);
+        }
+
+        .drawer.active {
+            display: flex;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .drawer-header h3 {
+            font-size: 1.25rem;
+            color: #ffffff;
+        }
+
+        .drawer-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .slide-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 4px;
+        }
+
+        .slide-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: rgba(13, 21, 38, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .slide-item.active {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 240, 255, 0.12);
+        }
+
+        .slide-item-num {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            min-width: 28px;
+        }
+
+        .slide-item-title {
+            font-size: 0.95rem;
+            color: #f0f6fc;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Room Connect Overlay (When opened directly without URL param) */
+        .connect-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 7, 18, 0.97);
+            z-index: 200;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .connect-overlay.active {
+            display: flex;
+        }
+
+        .connect-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 20px;
+            padding: 28px 22px;
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .connect-card h2 {
+            font-size: 1.4rem;
+            color: #ffffff;
+        }
+
+        .connect-input {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--bg-card-border);
+            color: var(--accent-cyan);
+            outline: none;
+        }
+
+        .connect-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+        }
+
+        .btn-primary {
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="conn-status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Connecting...</span>
+        </div>
+        <div class="room-tag" id="roomBadge">ROOM: ---</div>
+    </div>
+
+    <!-- Presentation Timer -->
+    <div class="timer-card">
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div class="timer-controls">
+            <button class="timer-btn" id="timerToggleBtn">Start</button>
+            <button class="timer-btn" id="timerResetBtn">Reset</button>
+        </div>
+    </div>
+
+    <!-- Slide Info Card -->
+    <div class="slide-info-card">
+        <div class="slide-counter-row">
+            <div class="slide-badge">ACTIVE SLIDE</div>
+            <div class="slide-fraction" id="slideFraction">1 / 23</div>
+        </div>
+        <div class="slide-progress-track">
+            <div class="slide-progress-fill" id="slideProgressFill"></div>
+        </div>
+        <div class="slide-title-preview" id="slideTitlePreview">Loading presentation title...</div>
+    </div>
+
+    <!-- Main Navigation Big Touch Buttons -->
+    <div class="nav-grid">
+        <button class="btn-touch btn-touch-prev" id="btnPrev">
+            <span class="btn-icon">◄</span>
+            <span class="btn-label">Back</span>
+        </button>
+        <button class="btn-touch btn-touch-next" id="btnNext">
+            <span class="btn-icon">►</span>
+            <span class="btn-label">Next Slide</span>
+        </button>
+    </div>
+
+    <!-- Tool Bar -->
+    <div class="tools-bar">
+        <button class="tool-btn" id="btnSlidesModal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span>Slides</span>
+        </button>
+        <button class="tool-btn" id="btnLaserToggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+            <span>Laser</span>
+        </button>
+        <button class="tool-btn" id="btnBlackout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span id="blackoutLabel">Blank</span>
+        </button>
+        <button class="tool-btn" id="btnFullscreen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            <span>Screen</span>
+        </button>
+    </div>
+
+    <!-- Slide Jump Drawer -->
+    <div class="drawer" id="slideDrawer">
+        <div class="drawer-header">
+            <h3>Jump to Slide</h3>
+            <button class="drawer-close" id="drawerCloseBtn">&times;</button>
+        </div>
+        <div class="slide-list" id="slideList"></div>
+    </div>
+
+    <!-- Laser Touchpad Overlay -->
+    <div class="laser-pad" id="laserPad">
+        <div class="laser-pad-header">
+            <h4>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="1" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="23" y2="12"/></svg>
+                Laser Pointer Active
+            </h4>
+            <button class="laser-pad-close" id="laserCloseBtn">Close Pad</button>
+        </div>
+        <div class="laser-touch-area" id="laserArea">
+            <div class="laser-touch-cursor" id="laserPadCursor"></div>
+            <span>Drag your thumb to point</span>
+        </div>
+    </div>
+
+    <!-- Manual Room Connect Overlay -->
+    <div class="connect-overlay" id="connectOverlay">
+        <div class="connect-card">
+            <h2>Connect to Slide Deck</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Enter the 6-character room code displayed on your presentation screen:</p>
+            <input type="text" class="connect-input" id="manualRoomInput" placeholder="SEC-XXXX" maxlength="16">
+            <button class="btn-primary" id="manualConnectBtn">Connect Now</button>
+        </div>
+    </div>
+
+    <script>
+        // Haptic feedback helper
+        function triggerHaptic(duration = 35) {
+            if ('vibrate' in navigator) {
+                try { navigator.vibrate(duration); } catch(e) {}
+            }
+        }
+
+        // Room ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        let targetRoom = urlParams.get('room') || '';
+
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const roomBadge = document.getElementById('roomBadge');
+        const slideFraction = document.getElementById('slideFraction');
+        const slideProgressFill = document.getElementById('slideProgressFill');
+        const slideTitlePreview = document.getElementById('slideTitlePreview');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+        const btnSlidesModal = document.getElementById('btnSlidesModal');
+        const btnLaserToggle = document.getElementById('btnLaserToggle');
+        const btnBlackout = document.getElementById('btnBlackout');
+        const blackoutLabel = document.getElementById('blackoutLabel');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        const slideDrawer = document.getElementById('slideDrawer');
+        const drawerCloseBtn = document.getElementById('drawerCloseBtn');
+        const slideList = document.getElementById('slideList');
+        const laserPad = document.getElementById('laserPad');
+        const laserCloseBtn = document.getElementById('laserCloseBtn');
+        const laserArea = document.getElementById('laserArea');
+        const laserPadCursor = document.getElementById('laserPadCursor');
+        const connectOverlay = document.getElementById('connectOverlay');
+        const manualRoomInput = document.getElementById('manualRoomInput');
+        const manualConnectBtn = document.getElementById('manualConnectBtn');
+
+        let peer = null;
+        let conn = null;
+        let presentationSlides = [];
+        let currentSlideIndex = 0;
+        let isBlackout = false;
+
+        function updateConnectionUI(state, text) {
+            statusDot.className = 'status-dot ' + state;
+            statusText.textContent = text;
+        }
+
+        function sendCommand(cmd) {
+            if (conn && conn.open) {
+                conn.send(cmd);
+                return true;
+            }
+            return false;
+        }
+
+        function initPeerConnection(roomId) {
+            targetRoom = roomId.trim();
+            roomBadge.textContent = 'ROOM: ' + targetRoom.replace('sec-slide-', '').toUpperCase();
+            updateConnectionUI('', 'Connecting...');
+
+            // Random peer ID for phone
+            const phonePeerId = 'phone-' + Math.random().toString(36).substring(2, 8);
+            
+            try {
+                peer = new Peer(phonePeerId, {
+                    debug: 1,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:global.stun.twilio.com:3478' }
+                        ]
+                    }
+                });
+
+                peer.on('open', (id) => {
+                    console.log('Phone Peer open with ID:', id);
+                    connectToMaster();
+                });
+
+                peer.on('disconnected', () => {
+                    console.log('Phone peer disconnected, reconnecting...');
+                    try { peer.reconnect(); } catch(e) {}
+                });
+
+                peer.on('error', (err) => {
+                    console.error('Peer error:', err);
+                    updateConnectionUI('disconnected', 'Signal Error');
+                });
+            } catch(e) {
+                console.error(e);
+                updateConnectionUI('disconnected', 'Init Failed');
+            }
+        }
+
+        function connectToMaster() {
+            if (!peer || !targetRoom) return;
+
+            conn = peer.connect(targetRoom, { reliable: true });
+
+            conn.on('open', () => {
+                console.log('Connected to Master presentation!');
+                updateConnectionUI('connected', 'Connected');
+                triggerHaptic(50);
+                // Request initial status
+                sendCommand({ type: 'REQ_STATUS' });
+            });
+
+            conn.on('data', (data) => {
+                handleMasterMessage(data);
+            });
+
+            conn.on('close', () => {
+                console.log('Connection closed');
+                updateConnectionUI('disconnected', 'Disconnected');
+                setTimeout(() => {
+                    if (targetRoom) connectToMaster();
+                }, 3000);
+            });
+
+            conn.on('error', (err) => {
+                console.error('Conn error:', err);
+                updateConnectionUI('disconnected', 'Conn Lost');
+            });
+        }
+
+        function handleMasterMessage(data) {
+            if (!data) return;
+
+            if (data.type === 'STATE' || data.type === 'SLIDE_CHANGE') {
+                currentSlideIndex = data.currentSlide;
+                const total = data.totalSlides || 23;
+                slideFraction.textContent = `${currentSlideIndex + 1} / ${total}`;
+                slideProgressFill.style.width = `${((currentSlideIndex + 1) / total) * 100}%`;
+                
+                if (data.title) {
+                    slideTitlePreview.textContent = data.title;
+                }
+
+                if (data.slides && Array.isArray(data.slides)) {
+                    presentationSlides = data.slides;
+                    renderSlideList();
+                }
+
+                if (typeof data.isBlackout === 'boolean') {
+                    isBlackout = data.isBlackout;
+                    blackoutLabel.textContent = isBlackout ? 'Resume' : 'Blank';
+                    btnBlackout.classList.toggle('active', isBlackout);
+                }
+
+                updateActiveSlideInDrawer();
+            }
+        }
+
+        // Navigation controls
+        btnNext.addEventListener('click', () => {
+            triggerHaptic(40);
+            sendCommand({ type: 'NAV', action: 'NEXT' });
+        });
+
+        btnPrev.addEventListener('click', () => {
+            triggerHaptic(30);
+            sendCommand({ type: 'NAV', action: 'PREV' });
+        });
+
+        btnBlackout.addEventListener('click', () => {
+            triggerHaptic(40);
+            sendCommand({ type: 'BLACKOUT' });
+        });
+
+        btnFullscreen.addEventListener('click', () => {
+            triggerHaptic(40);
+            sendCommand({ type: 'FULLSCREEN' });
+        });
+
+        // Slide Drawer
+        btnSlidesModal.addEventListener('click', () => {
+            triggerHaptic(30);
+            slideDrawer.classList.add('active');
+        });
+
+        drawerCloseBtn.addEventListener('click', () => {
+            slideDrawer.classList.remove('active');
+        });
+
+        function renderSlideList() {
+            slideList.innerHTML = '';
+            presentationSlides.forEach((title, idx) => {
+                const item = document.createElement('div');
+                item.className = 'slide-item' + (idx === currentSlideIndex ? ' active' : '');
+                item.innerHTML = `
+                    <span class="slide-item-num">${idx + 1}</span>
+                    <span class="slide-item-title">${title}</span>
+                `;
+                item.addEventListener('click', () => {
+                    triggerHaptic(40);
+                    sendCommand({ type: 'GOTO', index: idx });
+                    slideDrawer.classList.remove('active');
+                });
+                slideList.appendChild(item);
+            });
+        }
+
+        function updateActiveSlideInDrawer() {
+            const items = slideList.querySelectorAll('.slide-item');
+            items.forEach((item, idx) => {
+                item.classList.toggle('active', idx === currentSlideIndex);
+            });
+        }
+
+        // Laser Touchpad Mode
+        btnLaserToggle.addEventListener('click', () => {
+            triggerHaptic(35);
+            laserPad.classList.add('active');
+            btnLaserToggle.classList.add('active');
+        });
+
+        laserCloseBtn.addEventListener('click', () => {
+            laserPad.classList.remove('active');
+            btnLaserToggle.classList.remove('active');
+            sendCommand({ type: 'LASER', active: false });
+        });
+
+        function handleLaserTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0] || e.changedTouches[0];
+            if (!touch) return;
+            const rect = laserArea.getBoundingClientRect();
+            let x = (touch.clientX - rect.left) / rect.width;
+            let y = (touch.clientY - rect.top) / rect.height;
+            x = Math.max(0, Math.min(1, x));
+            y = Math.max(0, Math.min(1, y));
+
+            laserPadCursor.style.display = 'block';
+            laserPadCursor.style.left = `${x * 100}%`;
+            laserPadCursor.style.top = `${y * 100}%`;
+
+            sendCommand({
+                type: 'LASER',
+                active: true,
+                x: x,
+                y: y
+            });
+        }
+
+        laserArea.addEventListener('touchstart', handleLaserTouch, { passive: false });
+        laserArea.addEventListener('touchmove', handleLaserTouch, { passive: false });
+        laserArea.addEventListener('touchend', (e) => {
+            laserPadCursor.style.display = 'none';
+            sendCommand({ type: 'LASER', active: false });
+        });
+
+        // Stopwatch Timer
+        let timerSeconds = 0;
+        let timerInterval = null;
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerToggleBtn = document.getElementById('timerToggleBtn');
+        const timerResetBtn = document.getElementById('timerResetBtn');
+
+        function formatTime(s) {
+            const mins = Math.floor(s / 60);
+            const secs = s % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        timerToggleBtn.addEventListener('click', () => {
+            triggerHaptic(30);
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                timerToggleBtn.textContent = 'Start';
+            } else {
+                timerInterval = setInterval(() => {
+                    timerSeconds++;
+                    timerDisplay.textContent = formatTime(timerSeconds);
+                }, 1000);
+                timerToggleBtn.textContent = 'Pause';
+            }
+        });
+
+        timerResetBtn.addEventListener('click', () => {
+            triggerHaptic(30);
+            clearInterval(timerInterval);
+            timerInterval = null;
+            timerSeconds = 0;
+            timerDisplay.textContent = '00:00';
+            timerToggleBtn.textContent = 'Start';
+        });
+
+        // Manual room code if no URL param
+        if (targetRoom) {
+            initPeerConnection(targetRoom);
+        } else {
+            connectOverlay.classList.add('active');
+            manualConnectBtn.addEventListener('click', () => {
+                const val = manualRoomInput.value.trim();
+                if (val) {
+                    let r = val.toLowerCase();
+                    if (!r.startsWith('sec-slide-')) {
+                        r = 'sec-slide-' + r;
+                    }
+                    connectOverlay.classList.remove('active');
+                    initPeerConnection(r);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

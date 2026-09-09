@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="assets/qrcode.min.js"></script>
+<script src="assets/peerjs.min.js"></script>
 <style>
     :root {
         --bg-dark: #030712;
@@ -965,9 +967,258 @@
             min-width: 40px !important;
         }
     }
+
+    /* Remote Control & QR Modal Styles */
+    .qr-btn {
+        background: rgba(0, 240, 255, 0.1) !important;
+        border-color: rgba(0, 240, 255, 0.3) !important;
+        color: var(--accent-cyan) !important;
+    }
+    .qr-btn:hover {
+        background: var(--accent-cyan) !important;
+        color: var(--bg-dark) !important;
+    }
+
+    .laser-pointer {
+        position: fixed;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #ff2a5f;
+        box-shadow: 0 0 12px #ff2a5f, 0 0 24px #ff2a5f, 0 0 36px rgba(255, 42, 95, 0.9);
+        pointer-events: none;
+        z-index: 99999;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+    .laser-pointer.active {
+        opacity: 1;
+    }
+
+    .blackout-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #000000;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .blackout-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .remote-toast {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        background: rgba(13, 21, 38, 0.95);
+        border: 1px solid var(--accent-cyan);
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 10000;
+        box-shadow: 0 8px 30px rgba(0, 240, 255, 0.25);
+        transform: translateY(-50px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+    }
+    .remote-toast.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    .qr-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(3, 7, 18, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .qr-modal-overlay.active {
+        display: flex;
+    }
+
+    .qr-modal-card {
+        background: rgba(13, 21, 38, 0.95);
+        border: 1px solid var(--accent-cyan);
+        border-radius: 20px;
+        padding: 32px 28px;
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.2);
+        animation: qrModalPop 0.25s ease-out;
+    }
+    @keyframes qrModalPop {
+        from { transform: scale(0.92); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .qr-close-btn {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border: none;
+        color: var(--text-muted);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        font-size: 1.3rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    .qr-close-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+    }
+
+    .qr-header .qr-badge {
+        display: inline-block;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        color: var(--accent-cyan);
+        background: rgba(0, 240, 255, 0.1);
+        border: 1px solid rgba(0, 240, 255, 0.25);
+        padding: 4px 12px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+
+    .qr-header h3 {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 6px;
+    }
+
+    .qr-header p {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 20px;
+    }
+
+    .qr-code-wrapper {
+        background: #ffffff;
+        padding: 16px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+    }
+    .qr-code-wrapper img, .qr-code-wrapper canvas {
+        display: block;
+        width: 190px;
+        height: 190px;
+    }
+
+    .qr-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .room-code-tag {
+        font-size: 0.9rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 6px 14px;
+        border-radius: 8px;
+    }
+
+    .qr-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.86rem;
+        color: var(--text-muted);
+    }
+
+    .qr-status .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent-amber);
+        box-shadow: 0 0 8px var(--accent-amber);
+    }
+
+    .qr-status .status-dot.connected {
+        background: var(--accent-green);
+        box-shadow: 0 0 10px var(--accent-green);
+    }
+
+    .qr-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .btn-copy-link, .btn-open-tab {
+        padding: 9px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-copy-link {
+        background: rgba(0, 240, 255, 0.15);
+        border: 1px solid var(--accent-cyan);
+        color: var(--accent-cyan);
+    }
+    .btn-copy-link:hover {
+        background: var(--accent-cyan);
+        color: var(--bg-dark);
+    }
+
+    .btn-open-tab {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
+    .btn-open-tab:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
 </style>
 </head>
 <body>
+
+<div class="laser-pointer" id="laserPointer"></div>
+<div class="blackout-overlay" id="blackoutOverlay"></div>
+<div class="remote-toast" id="remoteToast">📱 Phone Connected as Remote Controller!</div>
 
 <div class="progress-bar" id="progressBar"></div>
 
@@ -1989,13 +2240,46 @@
     <button class="nav-btn" id="prevBtn" title="Previous Slide (Left Arrow)">◄</button>
     <div class="slide-counter" id="slideCounter">1 / 23</div>
     <button class="nav-btn" id="nextBtn" title="Next Slide (Right Arrow or Spacebar)">►</button>
+    <button class="nav-btn qr-btn" id="qrBtn" title="Phone Remote Control (R)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    </button>
     <button class="nav-btn" id="fullscreenBtn" title="Toggle Fullscreen (F)">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
     </button>
 </div>
 
 <div class="keyboard-hint" style="display: none;">
-    Use <span class="key">←</span> <span class="key">→</span> arrow keys or <span class="key">Space</span> to navigate
+    Use <span class="key">←</span> <span class="key">→</span> arrow keys, <span class="key">Space</span> to navigate, or press <span class="key">R</span> for Phone Remote
+</div>
+
+<!-- QR Remote Modal -->
+<div id="qrModal" class="qr-modal-overlay">
+    <div class="qr-modal-card">
+        <button class="qr-close-btn" id="qrCloseBtn">&times;</button>
+        <div class="qr-header">
+            <div class="qr-badge">WIRELESS REMOTE</div>
+            <h3>Scan to Control</h3>
+            <p>Scan with your phone camera to control this slide deck wirelessly</p>
+        </div>
+        <div class="qr-code-wrapper">
+            <div id="qrcode"></div>
+        </div>
+        <div class="qr-meta">
+            <div class="room-code-tag">ROOM: <span id="roomCodeDisplay">GENERATING...</span></div>
+            <div class="qr-status" id="remoteStatus">
+                <span class="status-dot" id="qrStatusDot"></span>
+                <span id="remoteStatusText">Waiting for phone...</span>
+            </div>
+        </div>
+        <div class="qr-actions">
+            <button class="btn-copy-link" id="copyRemoteLinkBtn">Copy Link</button>
+            <a id="openRemoteTab" href="#" target="_blank" class="btn-open-tab">Open Test Tab</a>
+        </div>
+        <div id="localIpNotice" style="display:none; margin-top:14px; font-size:0.78rem; color:#ffaa00; background:rgba(255,170,0,0.1); border:1px solid rgba(255,170,0,0.25); border-radius:8px; padding:6px 10px;">
+            <span>📱 Real phone test on Wi-Fi? Switch to: </span>
+            <a id="wifiIpLink" href="http://192.168.8.102:8000/index.html" style="color:#00f0ff; font-weight:700; text-decoration:underline;">192.168.8.102:8000</a>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -2004,9 +2288,30 @@
         const totalSlides = slides.length;
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
         const slideCounter = document.getElementById('slideCounter');
         const progressBar = document.getElementById('progressBar');
-        
+        const qrBtn = document.getElementById('qrBtn');
+        const qrModal = document.getElementById('qrModal');
+        const qrCloseBtn = document.getElementById('qrCloseBtn');
+        const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+        const qrStatusDot = document.getElementById('qrStatusDot');
+        const remoteStatusText = document.getElementById('remoteStatusText');
+        const copyRemoteLinkBtn = document.getElementById('copyRemoteLinkBtn');
+        const openRemoteTab = document.getElementById('openRemoteTab');
+        const laserPointer = document.getElementById('laserPointer');
+        const blackoutOverlay = document.getElementById('blackoutOverlay');
+        const remoteToast = document.getElementById('remoteToast');
+
+        let isBlackout = false;
+        let activeRemoteConns = [];
+
+        // Extract slide titles for remote controller drawer
+        const slideTitles = Array.from(slides).map((slide, i) => {
+            const heading = slide.querySelector('.main-title, .slide-title-modern, .slide-title, h1, h2, h3');
+            return heading ? heading.innerText.replace(/\s+/g, ' ').trim() : `Slide ${i + 1}`;
+        });
+
         function getSlideFromHash() {
             const hash = window.location.hash.replace('#', '');
             const num = parseInt(hash, 10);
@@ -2018,12 +2323,38 @@
 
         let currentSlide = getSlideFromHash();
 
+        function showToast(text, duration = 3500) {
+            if (!remoteToast) return;
+            remoteToast.textContent = text;
+            remoteToast.classList.add('show');
+            setTimeout(() => {
+                remoteToast.classList.remove('show');
+            }, duration);
+        }
+
+        function broadcastStateToRemotes() {
+            const state = {
+                type: 'STATE',
+                currentSlide: currentSlide,
+                totalSlides: totalSlides,
+                title: slideTitles[currentSlide] || `Slide ${currentSlide + 1}`,
+                slides: slideTitles,
+                isBlackout: isBlackout
+            };
+            activeRemoteConns.forEach(conn => {
+                if (conn && conn.open) {
+                    try { conn.send(state); } catch(e) {}
+                }
+            });
+        }
+
         function updateSlide(index) {
             slides.forEach(slide => slide.classList.remove('active'));
             slides[index].classList.add('active');
             slideCounter.textContent = `${index + 1} / ${totalSlides}`;
             progressBar.style.width = `${((index + 1) / totalSlides) * 100}%`;
             history.replaceState(null, null, `#${index + 1}`);
+            broadcastStateToRemotes();
         }
 
         window.addEventListener('hashchange', () => {
@@ -2048,11 +2379,19 @@
             }
         }
 
-        nextBtn.addEventListener('click', nextSlide);
-        prevBtn.addEventListener('click', prevSlide);
+        function goToSlide(idx) {
+            if (idx >= 0 && idx < totalSlides) {
+                currentSlide = idx;
+                updateSlide(currentSlide);
+            }
+        }
 
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        
+        function toggleBlackout() {
+            isBlackout = !isBlackout;
+            blackoutOverlay.classList.toggle('active', isBlackout);
+            broadcastStateToRemotes();
+        }
+
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
@@ -2063,9 +2402,27 @@
             }
         }
 
+        nextBtn.addEventListener('click', nextSlide);
+        prevBtn.addEventListener('click', prevSlide);
         fullscreenBtn.addEventListener('click', toggleFullscreen);
         document.addEventListener('dblclick', toggleFullscreen);
 
+        // QR Modal toggle
+        function openQRModal() {
+            qrModal.classList.add('active');
+        }
+
+        function closeQRModal() {
+            qrModal.classList.remove('active');
+        }
+
+        qrBtn.addEventListener('click', openQRModal);
+        qrCloseBtn.addEventListener('click', closeQRModal);
+        qrModal.addEventListener('click', (e) => {
+            if (e.target === qrModal) closeQRModal();
+        });
+
+        // Keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
                 e.preventDefault();
@@ -2075,18 +2432,190 @@
                 prevSlide();
             } else if (e.key === 'Home') {
                 e.preventDefault();
-                currentSlide = 0;
-                updateSlide(currentSlide);
+                goToSlide(0);
             } else if (e.key === 'End') {
                 e.preventDefault();
-                currentSlide = totalSlides - 1;
-                updateSlide(currentSlide);
+                goToSlide(totalSlides - 1);
             } else if (e.key === 'f' || e.key === 'F') {
                 e.preventDefault();
                 toggleFullscreen();
+            } else if (e.key === 'b' || e.key === 'B' || e.key === '.') {
+                e.preventDefault();
+                toggleBlackout();
+            } else if (e.key === 'r' || e.key === 'R') {
+                e.preventDefault();
+                if (qrModal.classList.contains('active')) {
+                    closeQRModal();
+                } else {
+                    openQRModal();
+                }
+            } else if (e.key === 'Escape') {
+                if (qrModal.classList.contains('active')) closeQRModal();
+                if (isBlackout) toggleBlackout();
             }
         });
 
+        // -------------------------------------------------------------
+        // WebRTC Serverless Phone Remote Control via PeerJS
+        // -------------------------------------------------------------
+        const rawCode = Math.random().toString(36).substring(2, 7).toLowerCase();
+        const peerRoomId = 'sec-slide-' + rawCode;
+        const displayCode = rawCode.toUpperCase();
+        roomCodeDisplay.textContent = displayCode;
+
+        // Build remote URL
+        let remoteFullUrl = '';
+        try {
+            const loc = window.location;
+            let baseUrl = loc.href.split('#')[0].split('?')[0];
+            if (baseUrl.endsWith('.html')) {
+                baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
+            } else if (!baseUrl.endsWith('/')) {
+                baseUrl += '/';
+            }
+            remoteFullUrl = baseUrl + 'remote.html?room=' + peerRoomId;
+        } catch(e) {
+            remoteFullUrl = 'remote.html?room=' + peerRoomId;
+        }
+
+        openRemoteTab.href = remoteFullUrl;
+
+        copyRemoteLinkBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(remoteFullUrl).then(() => {
+                copyRemoteLinkBtn.textContent = 'Copied!';
+                setTimeout(() => { copyRemoteLinkBtn.textContent = 'Copy Link'; }, 2000);
+            }).catch(() => {
+                prompt('Copy remote link:', remoteFullUrl);
+            });
+        });
+
+        // Generate QR Code
+        function generateQR() {
+            const qrcodeContainer = document.getElementById('qrcode');
+            qrcodeContainer.innerHTML = '';
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(qrcodeContainer, {
+                    text: remoteFullUrl,
+                    width: 190,
+                    height: 190,
+                    colorDark: '#030712',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } else {
+                qrcodeContainer.innerHTML = '<p style="color:#ff3366;font-size:0.8rem;">QR Library Loading...</p>';
+            }
+        }
+
+        generateQR();
+
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            const notice = document.getElementById('localIpNotice');
+            if (notice) notice.style.display = 'block';
+        }
+
+        // Initialize PeerJS
+        function setupPeer() {
+            if (typeof Peer === 'undefined') {
+                console.warn('PeerJS not loaded yet, retrying...');
+                setTimeout(setupPeer, 500);
+                return;
+            }
+
+            try {
+                const peer = new Peer(peerRoomId, {
+                    debug: 1,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:global.stun.twilio.com:3478' }
+                        ]
+                    }
+                });
+
+                peer.on('open', (id) => {
+                    console.log('Master slide deck ready with ID:', id);
+                    remoteStatusText.textContent = 'Ready - Scan QR code';
+                });
+
+                peer.on('connection', (conn) => {
+                    activeRemoteConns.push(conn);
+
+                    conn.on('open', () => {
+                        console.log('Phone connected via WebRTC!');
+                        qrStatusDot.classList.add('connected');
+                        remoteStatusText.textContent = 'Phone Connected!';
+                        showToast('📱 Phone Connected as Remote Controller!');
+                        
+                        // Send current state to phone
+                        conn.send({
+                            type: 'STATE',
+                            currentSlide: currentSlide,
+                            totalSlides: totalSlides,
+                            title: slideTitles[currentSlide] || `Slide ${currentSlide + 1}`,
+                            slides: slideTitles,
+                            isBlackout: isBlackout
+                        });
+                    });
+
+                    conn.on('data', (data) => {
+                        if (!data) return;
+
+                        if (data.type === 'NAV') {
+                            if (data.action === 'NEXT') nextSlide();
+                            if (data.action === 'PREV') prevSlide();
+                        } else if (data.type === 'GOTO') {
+                            goToSlide(data.index);
+                        } else if (data.type === 'BLACKOUT') {
+                            toggleBlackout();
+                        } else if (data.type === 'FULLSCREEN') {
+                            toggleFullscreen();
+                        } else if (data.type === 'LASER') {
+                            if (data.active) {
+                                laserPointer.classList.add('active');
+                                const x = data.x * window.innerWidth;
+                                const y = data.y * window.innerHeight;
+                                laserPointer.style.left = `${x}px`;
+                                laserPointer.style.top = `${y}px`;
+                            } else {
+                                laserPointer.classList.remove('active');
+                            }
+                        } else if (data.type === 'REQ_STATUS') {
+                            broadcastStateToRemotes();
+                        }
+                    });
+
+                    conn.on('close', () => {
+                        activeRemoteConns = activeRemoteConns.filter(c => c !== conn);
+                        if (activeRemoteConns.length === 0) {
+                            qrStatusDot.classList.remove('connected');
+                            remoteStatusText.textContent = 'Waiting for phone...';
+                            laserPointer.classList.remove('active');
+                            showToast('⚠️ Phone Remote Disconnected', 2500);
+                        }
+                    });
+
+                    conn.on('error', (err) => {
+                        console.error('Conn error:', err);
+                    });
+                });
+
+                peer.on('disconnected', () => {
+                    console.log('Peer disconnected from signaling server, reconnecting...');
+                    try { peer.reconnect(); } catch(e) {}
+                });
+
+                peer.on('error', (err) => {
+                    console.error('Peer error:', err);
+                    remoteStatusText.textContent = 'Signaling reconnecting...';
+                });
+
+            } catch(e) {
+                console.error('Failed to init PeerJS:', e);
+            }
+        }
+
+        setupPeer();
         updateSlide(currentSlide);
     });
 </script>
