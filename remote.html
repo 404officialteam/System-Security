@@ -1482,9 +1482,18 @@
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' }
-            ]
+                { urls: 'stun:global.stun.twilio.com:3478' },
+                {
+                    urls: [
+                        'turn:openrelay.metered.ca:80',
+                        'turn:openrelay.metered.ca:443',
+                        'turn:openrelay.metered.ca:443?transport=tcp'
+                    ],
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ],
+            sdpSemantics: 'unified-plan'
         };
 
         let reconnectTimeout = null;
@@ -1650,7 +1659,7 @@
                 return;
             }
 
-            conn.on('open', () => {
+            function onMasterOpen() {
                 if (connectionAttemptTimer) clearTimeout(connectionAttemptTimer);
                 reconnectAttempts = 0;
                 console.log('Connected to Master presentation!');
@@ -1665,7 +1674,13 @@
                         sendCommand({ type: 'REQ_STATUS' });
                     }
                 }, 600);
-            });
+            }
+
+            if (conn.open) {
+                onMasterOpen();
+            } else {
+                conn.on('open', onMasterOpen);
+            }
 
             conn.on('data', (data) => {
                 if (data.type === 'PONG') return;

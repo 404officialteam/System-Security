@@ -2277,9 +2277,8 @@
             <button class="btn-copy-link" id="copyRemoteLinkBtn">Copy Link</button>
             <a id="openRemoteTab" href="#" target="_blank" class="btn-open-tab">Open Test Tab</a>
         </div>
-        <div id="localIpNotice" style="display:none; margin-top:14px; font-size:0.78rem; color:#ffaa00; background:rgba(255,170,0,0.1); border:1px solid rgba(255,170,0,0.25); border-radius:8px; padding:6px 10px;">
-            <span>📱 Real phone test on Wi-Fi? Switch to: </span>
-            <a id="wifiIpLink" href="http://192.168.8.102:8000/index.html" style="color:#00f0ff; font-weight:700; text-decoration:underline;">192.168.8.102:8000</a>
+        <div id="localIpNotice" style="display:none; margin-top:14px; font-size:0.78rem; color:#00f0ff; background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.25); border-radius:8px; padding:8px 12px; text-align:center;">
+            <span>⚡ Local test detected: QR connects to your deck via secure WebRTC relay.</span>
         </div>
     </div>
 </div>
@@ -2536,11 +2535,14 @@
         // -------------------------------------------------------------
         let rawCode = '';
         try {
-            rawCode = sessionStorage.getItem('sec_slide_room_code') || '';
+            rawCode = localStorage.getItem('sec_slide_room_code') || sessionStorage.getItem('sec_slide_room_code') || '';
         } catch(e) {}
         if (!rawCode || rawCode.length < 4) {
             rawCode = Math.random().toString(36).substring(2, 7).toLowerCase();
-            try { sessionStorage.setItem('sec_slide_room_code', rawCode); } catch(e) {}
+            try { 
+                localStorage.setItem('sec_slide_room_code', rawCode);
+                sessionStorage.setItem('sec_slide_room_code', rawCode); 
+            } catch(e) {}
         }
         const peerRoomId = 'sec-slide-' + rawCode;
         const displayCode = rawCode.toUpperCase();
@@ -2603,6 +2605,27 @@
             if (notice) notice.style.display = 'block';
         }
 
+        const PEER_ICE_CONFIG = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:global.stun.twilio.com:3478' },
+                {
+                    urls: [
+                        'turn:openrelay.metered.ca:80',
+                        'turn:openrelay.metered.ca:443',
+                        'turn:openrelay.metered.ca:443?transport=tcp'
+                    ],
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ],
+            sdpSemantics: 'unified-plan'
+        };
+
+        let masterPeer = null;
+
         // Initialize PeerJS
         function setupPeer() {
             if (typeof Peer === 'undefined') {
@@ -2612,28 +2635,25 @@
             }
 
             try {
-                const peer = new Peer(peerRoomId, {
+                if (masterPeer) {
+                    try { masterPeer.destroy(); } catch(e) {}
+                    masterPeer = null;
+                }
+
+                masterPeer = new Peer(peerRoomId, {
                     debug: 1,
-                    config: {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                            { urls: 'stun:stun2.l.google.com:19302' },
-                            { urls: 'stun:stun3.l.google.com:19302' },
-                            { urls: 'stun:stun4.l.google.com:19302' }
-                        ]
-                    }
+                    config: PEER_ICE_CONFIG
                 });
 
-                peer.on('open', (id) => {
+                masterPeer.on('open', (id) => {
                     console.log('Master slide deck ready with ID:', id);
                     remoteStatusText.textContent = 'Ready - Scan QR code';
                 });
 
-                peer.on('connection', (conn) => {
+                masterPeer.on('connection', (conn) => {
                     activeRemoteConns.push(conn);
 
-                    conn.on('open', () => {
+                    function handleConnOpen() {
                         console.log('Phone connected via WebRTC!');
                         qrStatusDot.classList.add('connected');
                         remoteStatusText.textContent = 'Phone Connected!';
@@ -2655,7 +2675,13 @@
                             isBlackout: isBlackout,
                             isFullscreen: isDeckFullscreen()
                         });
-                    });
+                    }
+
+                    if (conn.open) {
+                        handleConnOpen();
+                    } else {
+                        conn.on('open', handleConnOpen);
+                    }
 
                     conn.on('data', (data) => {
                         if (!data) return;
