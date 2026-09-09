@@ -1640,14 +1640,16 @@
 
             if (connectionAttemptTimer) clearTimeout(connectionAttemptTimer);
 
-            // Set 5.5s timeout if WebRTC signaling handshake stalls
+            updateConnectionUI('', 'Connecting...');
+
+            // Allow 25s for mobile 4G/5G carrier WebRTC signaling and TURN relay setup
             connectionAttemptTimer = setTimeout(() => {
                 if (!conn || !conn.open) {
-                    console.warn('Connection handshake timed out.');
-                    updateConnectionUI('disconnected', 'Timeout');
-                    scheduleReconnect(1200);
+                    console.warn('Connection handshake timed out on mobile network.');
+                    updateConnectionUI('disconnected', 'Tap to Retry');
+                    scheduleReconnect(3000);
                 }
-            }, 5500);
+            }, 25000);
 
             try {
                 conn = peer.connect(targetRoom, {
@@ -1655,7 +1657,7 @@
                 });
             } catch(e) {
                 console.error('peer.connect error:', e);
-                scheduleReconnect(1500);
+                scheduleReconnect(2000);
                 return;
             }
 
