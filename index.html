@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="assets/qrcode.min.js"></script>
 <script src="assets/peerjs.min.js"></script>
+<script src="assets/paho-mqtt.min.js"></script>
 <style>
     :root {
         --bg-dark: #030712;
@@ -2392,6 +2393,29 @@
             }, duration);
         }
 
+        let mqttClient = null;
+        let mqttConnected = false;
+
+        function publishMqttState(state) {
+            if (!mqttClient || !mqttConnected) return;
+            try {
+                const payload = JSON.stringify(state);
+                const msgDefault = new Paho.MQTT.Message(payload);
+                msgDefault.destinationName = 'team404/syssec/control/state';
+                msgDefault.retained = true;
+                mqttClient.send(msgDefault);
+
+                if (peerRoomId) {
+                    const msgRoom = new Paho.MQTT.Message(payload);
+                    msgRoom.destinationName = 'team404/syssec/' + peerRoomId + '/state';
+                    msgRoom.retained = true;
+                    mqttClient.send(msgRoom);
+                }
+            } catch(e) {
+                console.warn('MQTT publish error:', e);
+            }
+        }
+
         function broadcastStateToRemotes() {
             const state = {
                 type: 'STATE',
@@ -2408,6 +2432,7 @@
                     try { conn.send(state); } catch(e) {}
                 }
             });
+            publishMqttState(state);
         }
 
         function updateSlide(index) {
@@ -2774,7 +2799,100 @@
             }
         }
 
+        // -------------------------------------------------------------
+        // Instant MQTT Cloud Remote Control (HiveMQ WSS)
+        // Works anywhere, 0-config, no scanning required!
+        // -------------------------------------------------------------
+        let mqttReconnectTimer = null;
+        function setupMqtt() {
+            if (typeof Paho === 'undefined' || !Paho.MQTT || !Paho.MQTT.Client) {
+                setTimeout(setupMqtt, 300);
+                return;
+            }
+
+            try {
+                if (mqttClient) {
+                    try { mqttClient.disconnect(); } catch(e) {}
+                    mqttClient = null;
+                }
+
+                const clientId = 'slide-deck-' + Math.random().toString(36).substring(2, 9);
+                mqttClient = new Paho.MQTT.Client('broker.hivemq.com', 8884, '/mqtt', clientId);
+
+                mqttClient.onConnectionLost = (responseObject) => {
+                    mqttConnected = false;
+                    console.warn('MQTT Connection lost:', responseObject.errorMessage);
+                    if (mqttReconnectTimer) clearTimeout(mqttReconnectTimer);
+                    mqttReconnectTimer = setTimeout(setupMqtt, 2000);
+                };
+
+                mqttClient.onMessageArrived = (message) => {
+                    try {
+                        const data = JSON.parse(message.payloadString);
+                        if (!data) return;
+
+                        // Visual feedback that remote is talking
+                        qrStatusDot.classList.add('connected');
+                        remoteStatusText.textContent = 'Phone Remote Connected!';
+
+                        if (data.type === 'NAV') {
+                            if (data.action === 'NEXT') nextSlide();
+                            if (data.action === 'PREV') prevSlide();
+                        } else if (data.type === 'GOTO') {
+                            goToSlide(data.index);
+                        } else if (data.type === 'BLACKOUT') {
+                            toggleBlackout();
+                        } else if (data.type === 'FULLSCREEN') {
+                            toggleFullscreen();
+                        } else if (data.type === 'LASER') {
+                            if (data.active) {
+                                laserPointer.classList.add('active');
+                                const x = data.x * window.innerWidth;
+                                const y = data.y * window.innerHeight;
+                                laserPointer.style.left = `${x}px`;
+                                laserPointer.style.top = `${y}px`;
+                            } else {
+                                laserPointer.classList.remove('active');
+                            }
+                        } else if (data.type === 'REQ_STATUS') {
+                            broadcastStateToRemotes();
+                        }
+                    } catch(err) {
+                        console.error('MQTT message handle error:', err);
+                    }
+                };
+
+                mqttClient.connect({
+                    useSSL: true,
+                    timeout: 8,
+                    keepAliveInterval: 30,
+                    cleanSession: true,
+                    onSuccess: () => {
+                        mqttConnected = true;
+                        console.log('Slide deck connected to MQTT HiveMQ Cloud!');
+                        mqttClient.subscribe('team404/syssec/control/cmd', { qos: 1 });
+                        if (peerRoomId) {
+                            mqttClient.subscribe('team404/syssec/' + peerRoomId + '/cmd', { qos: 1 });
+                        }
+                        broadcastStateToRemotes();
+                    },
+                    onFailure: (err) => {
+                        mqttConnected = false;
+                        console.warn('MQTT connect failure:', err);
+                        if (mqttReconnectTimer) clearTimeout(mqttReconnectTimer);
+                        mqttReconnectTimer = setTimeout(setupMqtt, 3000);
+                    }
+                });
+
+            } catch(e) {
+                console.error('setupMqtt error:', e);
+                if (mqttReconnectTimer) clearTimeout(mqttReconnectTimer);
+                mqttReconnectTimer = setTimeout(setupMqtt, 3000);
+            }
+        }
+
         setupPeer();
+        setupMqtt();
         updateSlide(currentSlide);
     });
 </script>

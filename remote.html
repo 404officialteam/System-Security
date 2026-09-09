@@ -19,6 +19,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="assets/paho-mqtt.min.js"></script>
     <script src="assets/peerjs.min.js?v=2"></script>
     <script src="assets/html5-qrcode.min.js?v=2"></script>
     <style>
@@ -1472,17 +1473,123 @@
             }
         }
 
+        // -------------------------------------------------------------
+        // MQTT Instant Cloud Remote Client (HiveMQ WSS)
+        // Instant connection on opening /remote - 0 config, no scan, no code!
+        // -------------------------------------------------------------
+        let mqttPhoneClient = null;
+        let mqttPhoneConnected = false;
+        let mqttPhoneReconnectTimer = null;
+        let mqttCmdTopic = 'team404/syssec/control/cmd';
+
         function updateConnectionUI(state, text) {
+            if (mqttPhoneConnected || (conn && conn.open)) {
+                statusDot.className = 'status-dot connected';
+                statusText.textContent = 'Connected';
+                return;
+            }
             statusDot.className = 'status-dot ' + state;
             statusText.textContent = text;
         }
 
-        function sendCommand(cmd) {
-            if (conn && conn.open) {
-                conn.send(cmd);
-                return true;
+        function initMqttPhone() {
+            if (typeof Paho === 'undefined' || !Paho.MQTT || !Paho.MQTT.Client) {
+                setTimeout(initMqttPhone, 300);
+                return;
             }
-            return false;
+
+            try {
+                if (mqttPhoneClient) {
+                    try { mqttPhoneClient.disconnect(); } catch(e) {}
+                    mqttPhoneClient = null;
+                }
+
+                if (targetRoom) {
+                    mqttCmdTopic = 'team404/syssec/' + targetRoom + '/cmd';
+                } else {
+                    mqttCmdTopic = 'team404/syssec/control/cmd';
+                }
+
+                const clientId = 'slide-phone-' + Math.random().toString(36).substring(2, 9);
+                mqttPhoneClient = new Paho.MQTT.Client('broker.hivemq.com', 8884, '/mqtt', clientId);
+
+                mqttPhoneClient.onConnectionLost = (responseObject) => {
+                    mqttPhoneConnected = false;
+                    console.warn('MQTT Remote connection lost:', responseObject.errorMessage);
+                    if (!conn || !conn.open) {
+                        updateConnectionUI('disconnected', 'Reconnecting...');
+                    }
+                    if (mqttPhoneReconnectTimer) clearTimeout(mqttPhoneReconnectTimer);
+                    mqttPhoneReconnectTimer = setTimeout(initMqttPhone, 2000);
+                };
+
+                mqttPhoneClient.onMessageArrived = (message) => {
+                    try {
+                        const data = JSON.parse(message.payloadString);
+                        handleMasterMessage(data);
+                        mqttPhoneConnected = true;
+                        updateConnectionUI('connected', 'Connected');
+                    } catch(err) {
+                        console.error('MQTT remote parse error:', err);
+                    }
+                };
+
+                updateConnectionUI('', 'Connecting...');
+
+                mqttPhoneClient.connect({
+                    useSSL: true,
+                    timeout: 8,
+                    keepAliveInterval: 30,
+                    cleanSession: true,
+                    onSuccess: () => {
+                        mqttPhoneConnected = true;
+                        console.log('Phone remote connected to MQTT Cloud broker!');
+                        updateConnectionUI('connected', 'Connected');
+
+                        mqttPhoneClient.subscribe('team404/syssec/control/state', { qos: 1 });
+                        if (targetRoom) {
+                            mqttPhoneClient.subscribe('team404/syssec/' + targetRoom + '/state', { qos: 1 });
+                        }
+
+                        sendCommand({ type: 'REQ_STATUS' });
+                    },
+                    onFailure: (err) => {
+                        mqttPhoneConnected = false;
+                        console.warn('MQTT phone connection failure:', err);
+                        if (!conn || !conn.open) {
+                            updateConnectionUI('disconnected', 'Signal Retry');
+                        }
+                        if (mqttPhoneReconnectTimer) clearTimeout(mqttPhoneReconnectTimer);
+                        mqttPhoneReconnectTimer = setTimeout(initMqttPhone, 3000);
+                    }
+                });
+
+            } catch(e) {
+                console.error('initMqttPhone error:', e);
+                if (mqttPhoneReconnectTimer) clearTimeout(mqttPhoneReconnectTimer);
+                mqttPhoneReconnectTimer = setTimeout(initMqttPhone, 3000);
+            }
+        }
+
+        function sendCommand(cmd) {
+            let sent = false;
+            if (mqttPhoneClient && mqttPhoneConnected) {
+                try {
+                    const m = new Paho.MQTT.Message(JSON.stringify(cmd));
+                    m.destinationName = mqttCmdTopic;
+                    mqttPhoneClient.send(m);
+                    sent = true;
+                } catch(e) {
+                    console.warn('MQTT send error:', e);
+                }
+            }
+            if (conn && conn.open) {
+                try {
+                    conn.send(cmd);
+                    sent = true;
+                } catch(e) {}
+            }
+            return sent;
         }
 
         const ICE_CONFIG = {
@@ -2081,37 +2188,35 @@
             });
         }
         statusDot.parentElement.addEventListener('click', () => {
-            if (!conn || !conn.open) {
-                triggerHaptic(30);
-                updateConnectionUI('', 'Connecting...');
-                reconnectAttempts = 0;
-                initPeerConnection(targetRoom);
-            }
+            triggerHaptic(30);
+            updateConnectionUI('', 'Connecting...');
+            reconnectAttempts = 0;
+            initMqttPhone();
+            if (targetRoom) initPeerConnection(targetRoom);
         });
 
         // Lifecycle: Auto-reconnect when phone screen wakes up, app un-minimizes, or network connects
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && targetRoom && (!conn || !conn.open)) {
-                console.log('App became visible, auto-reconnecting to deck...');
-                reconnectAttempts = 0;
-                initPeerConnection(targetRoom);
+            if (document.visibilityState === 'visible') {
+                if (!mqttPhoneConnected) {
+                    console.log('App became visible, reconnecting MQTT...');
+                    initMqttPhone();
+                }
+                if (targetRoom && (!conn || !conn.open)) {
+                    initPeerConnection(targetRoom);
+                }
             }
         });
 
         window.addEventListener('focus', () => {
-            if (targetRoom && (!conn || !conn.open)) {
-                console.log('Window focused, auto-reconnecting to deck...');
-                reconnectAttempts = 0;
-                initPeerConnection(targetRoom);
-            }
+            if (!mqttPhoneConnected) initMqttPhone();
+            if (targetRoom && (!conn || !conn.open)) initPeerConnection(targetRoom);
         });
 
         window.addEventListener('online', () => {
-            if (targetRoom && (!conn || !conn.open)) {
-                console.log('Internet back online, auto-reconnecting...');
-                reconnectAttempts = 0;
-                initPeerConnection(targetRoom);
-            }
+            console.log('Internet back online, auto-reconnecting...');
+            initMqttPhone();
+            if (targetRoom && (!conn || !conn.open)) initPeerConnection(targetRoom);
         });
 
         connectOverlayCloseBtn.addEventListener('click', () => {
@@ -2128,7 +2233,6 @@
                 r = 'sec-slide-' + r;
             }
 
-            // Close existing connection cleanly if switching
             if (conn) {
                 try { conn.close(); } catch(e) {}
             }
@@ -2136,8 +2240,10 @@
                 try { peer.destroy(); } catch(e) {}
             }
 
+            targetRoom = r;
             connectOverlay.classList.remove('active');
             connectOverlayCloseBtn.style.display = 'block';
+            initMqttPhone();
             initPeerConnection(r);
         }
 
@@ -2152,12 +2258,10 @@
         // Initialize script display for first slide
         updateSlideScript(0);
 
-        // Connect automatically without any code or prompt!
+        // Connect automatically - NO scan required, NO room code required, 100% normal!
+        initMqttPhone();
         if (targetRoom) {
             initPeerConnection(targetRoom);
-        } else {
-            updateConnectionUI('disconnected', 'Scan QR');
-            slideTitlePreview.textContent = 'Please scan presentation QR code to connect.';
         }
     </script>
 </body>
