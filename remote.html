@@ -17,6 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="assets/peerjs.min.js"></script>
+    <script src="assets/html5-qrcode.min.js"></script>
     <style>
         :root {
             --bg-dark: #030712;
@@ -216,15 +217,303 @@
         }
 
         .slide-title-preview {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 700;
             color: #ffffff;
             line-height: 1.35;
-            min-height: 44px;
+            min-height: 24px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+
+        /* Speaker Notes / Script Per Slide */
+        .slide-script-box {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 8px 10px;
+            min-height: 0;
+            flex: 1;
+        }
+
+        .slide-script-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .script-badge {
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            letter-spacing: 0.8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+        }
+
+        .script-font-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .script-font-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-muted);
+            padding: 1px 7px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .script-font-btn:active {
+            background: var(--accent-cyan);
+            color: #030712;
+        }
+
+        .slide-script-content {
+            overflow-y: auto;
+            color: #e2e8f0;
+            font-size: 0.86rem;
+            line-height: 1.5;
+            padding-right: 4px;
+            user-select: text;
+            -webkit-user-select: text;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 240, 255, 0.3) transparent;
+        }
+
+        .slide-script-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .slide-script-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 240, 255, 0.35);
+            border-radius: 4px;
+        }
+
+        /* Top Bar Right Group */
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-camera-scan {
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            color: var(--accent-cyan);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-camera-scan:active {
+            transform: scale(0.96);
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+        }
+
+        /* QR Scanner Modal */
+        .qr-scanner-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(3, 7, 18, 0.96);
+            z-index: 300;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            backdrop-filter: blur(16px);
+        }
+
+        .qr-scanner-modal.active {
+            display: flex;
+        }
+
+        .qr-scanner-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+        }
+
+        .qr-scanner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .qr-scanner-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qr-scanner-title svg {
+            color: var(--accent-cyan);
+        }
+
+        .qr-viewfinder-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            max-height: 280px;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #qrScannerVideo {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+
+        #qrScannerVideo video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+
+        .scanner-reticle {
+            position: absolute;
+            width: 190px;
+            height: 190px;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+        }
+
+        .reticle-corner {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-color: var(--accent-cyan);
+            border-style: solid;
+        }
+
+        .reticle-corner.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 6px; }
+        .reticle-corner.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 6px; }
+        .reticle-corner.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 6px; }
+        .reticle-corner.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 6px; }
+
+        .scan-laser-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            box-shadow: 0 0 10px var(--accent-cyan);
+            animation: laserScan 2s ease-in-out infinite;
+        }
+
+        @keyframes laserScan {
+            0% { top: 4px; opacity: 0.8; }
+            50% { top: calc(100% - 6px); opacity: 1; }
+            100% { top: 4px; opacity: 0.8; }
+        }
+
+        .qr-scanner-footer {
+            padding: 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            text-align: center;
+        }
+
+        .scanner-prompt {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .scanner-btn-cancel {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .btn-scan-qr-cam {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(0, 240, 255, 0.15);
+            border: 1.5px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-scan-qr-cam:active {
+            transform: scale(0.97);
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+        }
+
+        .connect-divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            margin: 4px 0;
+        }
+
+        .connect-divider::before, .connect-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .connect-divider span {
+            padding: 0 8px;
         }
 
         /* Main Big Navigation Buttons */
@@ -524,9 +813,11 @@
                 border-radius: 14px;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-between;
+                justify-content: flex-start;
                 min-height: 0;
+                height: 100%;
                 gap: 6px;
+                overflow: hidden;
             }
 
             .slide-counter-row {
@@ -540,10 +831,24 @@
             }
 
             .slide-title-preview {
-                font-size: 0.88rem;
+                font-size: 0.85rem;
                 min-height: 0;
-                line-height: 1.3;
-                -webkit-line-clamp: 2;
+                line-height: 1.25;
+                -webkit-line-clamp: 1;
+            }
+
+            .slide-script-box {
+                flex: 1;
+                min-height: 0;
+                padding: 6px 10px;
+                background: rgba(0, 0, 0, 0.45);
+            }
+
+            .slide-script-content {
+                flex: 1;
+                min-height: 0;
+                font-size: 0.84rem;
+                line-height: 1.45;
             }
 
             .timer-card {
@@ -884,9 +1189,15 @@
             <span class="status-dot" id="statusDot"></span>
             <span id="statusText">Connecting...</span>
         </div>
-        <div class="room-tag" id="roomBadge" title="Tap to enter or change Room Code">
-            <span id="roomBadgeText">ROOM: ---</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <div class="top-bar-right">
+            <button class="btn-camera-scan" id="topCameraScanBtn" title="Scan QR Code with Camera">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Scan QR</span>
+            </button>
+            <div class="room-tag" id="roomBadge" title="Tap to enter or change Room Code">
+                <span id="roomBadgeText">ROOM: ---</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
         </div>
     </div>
 
@@ -909,6 +1220,23 @@
             <div class="slide-progress-fill" id="slideProgressFill"></div>
         </div>
         <div class="slide-title-preview" id="slideTitlePreview">Loading presentation title...</div>
+
+        <!-- Speaker Notes / Script Per Slide -->
+        <div class="slide-script-box" id="slideScriptBox">
+            <div class="slide-script-header">
+                <span class="script-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    SPEAKER SCRIPT
+                </span>
+                <div class="script-font-controls">
+                    <button class="script-font-btn" id="scriptFontMinus" title="Decrease font size">A-</button>
+                    <button class="script-font-btn" id="scriptFontPlus" title="Increase font size">A+</button>
+                </div>
+            </div>
+            <div class="slide-script-content" id="slideScriptContent">
+                Loading presenter script...
+            </div>
+        </div>
     </div>
 
     <!-- Main Navigation Big Touch Buttons -->
@@ -974,9 +1302,45 @@
                 <h2 style="font-size: 1.35rem; color: #ffffff;">Pair Room Code</h2>
                 <button class="drawer-close" id="connectOverlayCloseBtn" style="display: none;">&times;</button>
             </div>
+
+            <!-- Camera Scan Quick Action Button -->
+            <button class="btn-scan-qr-cam" id="overlayScanQrBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                Scan QR with Camera
+            </button>
+
+            <div class="connect-divider"><span>OR ENTER CODE</span></div>
+
             <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.4;">Enter the 5-character room code shown on your presentation screen (press <strong style="color:var(--accent-cyan);">R</strong> on slide deck):</p>
             <input type="text" class="connect-input" id="manualRoomInput" placeholder="e.g. A1B2C" maxlength="16" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
             <button class="btn-primary" id="manualConnectBtn">Connect Remote</button>
+        </div>
+    </div>
+
+    <!-- In-App Camera QR Scanner Modal -->
+    <div class="qr-scanner-modal" id="qrScannerModal">
+        <div class="qr-scanner-card">
+            <div class="qr-scanner-header">
+                <div class="qr-scanner-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Scan Presentation QR
+                </div>
+                <button class="drawer-close" id="scannerCloseBtn">&times;</button>
+            </div>
+            <div class="qr-viewfinder-box">
+                <div id="qrScannerVideo"></div>
+                <div class="scanner-reticle">
+                    <div class="reticle-corner tl"></div>
+                    <div class="reticle-corner tr"></div>
+                    <div class="reticle-corner bl"></div>
+                    <div class="reticle-corner br"></div>
+                    <div class="scan-laser-line"></div>
+                </div>
+            </div>
+            <div class="qr-scanner-footer">
+                <p class="scanner-prompt" id="scannerStatusPrompt">Point camera directly at the QR code on the presentation screen.</p>
+                <button class="scanner-btn-cancel" id="scannerDismissBtn">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -996,9 +1360,14 @@
         const statusText = document.getElementById('statusText');
         const roomBadge = document.getElementById('roomBadge');
         const roomBadgeText = document.getElementById('roomBadgeText');
+        const topCameraScanBtn = document.getElementById('topCameraScanBtn');
         const slideFraction = document.getElementById('slideFraction');
         const slideProgressFill = document.getElementById('slideProgressFill');
         const slideTitlePreview = document.getElementById('slideTitlePreview');
+        const slideScriptBox = document.getElementById('slideScriptBox');
+        const slideScriptContent = document.getElementById('slideScriptContent');
+        const scriptFontMinus = document.getElementById('scriptFontMinus');
+        const scriptFontPlus = document.getElementById('scriptFontPlus');
         const btnPrev = document.getElementById('btnPrev');
         const btnNext = document.getElementById('btnNext');
         const btnSlidesModal = document.getElementById('btnSlidesModal');
@@ -1015,14 +1384,60 @@
         const laserPadCursor = document.getElementById('laserPadCursor');
         const connectOverlay = document.getElementById('connectOverlay');
         const connectOverlayCloseBtn = document.getElementById('connectOverlayCloseBtn');
+        const overlayScanQrBtn = document.getElementById('overlayScanQrBtn');
         const manualRoomInput = document.getElementById('manualRoomInput');
         const manualConnectBtn = document.getElementById('manualConnectBtn');
+
+        // Camera QR Scanner Modal Elements
+        const qrScannerModal = document.getElementById('qrScannerModal');
+        const scannerCloseBtn = document.getElementById('scannerCloseBtn');
+        const scannerDismissBtn = document.getElementById('scannerDismissBtn');
+        const scannerStatusPrompt = document.getElementById('scannerStatusPrompt');
 
         let peer = null;
         let conn = null;
         let presentationSlides = [];
         let currentSlideIndex = 0;
         let isBlackout = false;
+        let scriptFontSize = 0.86;
+
+        // Comprehensive Presenter Talking Points / Scripts for all 23 Slides
+        const SLIDE_SCRIPTS = [
+            "Welcome everyone. Today we are presenting 'Cybersecurity Essentials: Protecting Personal Information in the Digital Age'. As our lives migrate online, our personal identities and digital footprints are constantly exposed to emerging cyber threats. Over the next 20 minutes, our team will guide you through four foundational modules: digital identity, current attack vectors, defense in depth, and practical action steps to secure your personal and organizational digital life.",
+            "Before we begin, let's introduce the project team behind this presentation: Hann Lyhour leading Digital Identity and Data Privacy, Chhour Vengchheang covering Attack Vectors and Phishing, Seng Channara discussing Defense in Depth and Passwords, and Kheng Rotha presenting Encryption, IoT Security, and Emerging Threats. Each speaker brings focused research on their respective domain.",
+            "Here is our presentation roadmap broken down into four core modules: Module 1 covers Digital Identity & Privacy fundamentals. Module 2 breaks down the Threat Landscape and how hackers target users. Module 3 details Defense in Depth, passwords, and counter-strategies. Finally, Module 4 covers Advanced Security, Encryption, and your immediate Action Plan.",
+            "We live in an era where data is more valuable than oil. Across banking, e-commerce, healthcare, social networking, and cloud services, every interaction records an immutable data footprint. Every search query, purchase, and geolocation ping is cataloged, analyzed, and stored. This unprecedented convenience brings substantial vulnerabilities if left unprotected.",
+            "Let's define what constitutes your Digital Identity. It breaks down into: Personally Identifiable Information (PII) like national ID, full name, phone number; Financial Data such as credit cards and banking credentials; Behavioral Data like search habits and browsing histories; and Biometric Data like fingerprints and facial scans. Compromise of any layer can trigger total identity theft.",
+            "Who collects your data and why? Tech giants harvest browsing behaviors for targeted advertising algorithms. Financial institutions track payment histories for risk profiling. Data brokers actively scrape and monetize aggregated profiles without your explicit awareness. Government agencies retain census and tax records. Understanding this ecosystem helps us see where exposure points occur.",
+            "Fortunately, global regulatory frameworks have emerged to enforce user rights. The EU's GDPR grants rights to access, erase, and transfer your data with severe fines for non-compliance. California's CCPA/CPRA gives consumers power over data sales. Frameworks like HIPAA protect healthcare data, while ISO/IEC 27701 establishes privacy management benchmarks worldwide.",
+            "Now entering Module 2: The Threat Landscape. Hackers exploit three primary vectors: deception through Social Engineering and Phishing, malicious code via Ransomware and Trojans, and network exploitation through Man-in-the-Middle attacks and Credential Stuffing. Human psychology is almost always the weakest link targeted by adversaries.",
+            "Phishing accounts for over 80% of reported security incidents worldwide. Attack types range from mass email phishing with urgent fake alerts, spear phishing targeted at specific individuals, smishing via SMS, and vishing over voice calls. Always look for sender domain mismatches, artificial urgency, unusual attachments, and inspect hyperlinks before clicking.",
+            "Passwords remain your initial perimeter defense, yet 60% of users still reuse passwords across multiple services. If one low-security forum is breached, attackers use automated credential stuffing tools across high-value portals like banking and email. The solution: passphrases with high entropy or dedicated password managers like Bitwarden or 1Password.",
+            "Never rely on passwords alone. Two-Factor Authentication (2FA) requires two distinct credential categories: something you know (password) combined with something you have (hardware token or authenticator app). Hardware security keys like YubiKey and TOTP apps like Aegis or Google Authenticator are vastly superior to SMS-based 2FA, which is susceptible to SIM swapping.",
+            "Social Engineering exploits human psychology rather than software vulnerabilities. Attackers utilize pretexting, baiting, shoulder surfing, and tailgating. They weaponize emotional triggers—fear, authority, scarcity, and helpfulness—to convince employees or individuals into bypassing established security protocols.",
+            "Every online action builds your Digital Footprint. An active footprint consists of conscious posts, blog comments, and shared photos. A passive footprint consists of IP logs, device telemetry, cookies, and location metadata quietly harvested in the background. Once indexed on search engines or archived by third parties, deleting this data is virtually impossible.",
+            "Securing your social media presence is crucial. Review and restrict audience visibility on legacy posts, disable precise geotagging on photos, turn off contact-syncing permissions, and routinely audit third-party connected apps that retain OAuth tokens to your primary accounts. Remember: real-time vacation updates notify criminals that your residence is unattended.",
+            "Public Wi-Fi networks in airports, cafes, and hotels are inherently untrusted environments. Attackers on the same network can execute ARP spoofing or spin up Evil Twin rogue access points to inspect plaintext traffic. Always verify SSL certificates, avoid sensitive transactions on untrusted networks, or tunnel all traffic through a reputable encrypted VPN.",
+            "Device hardening must be implemented across all endpoints. Enable full disk encryption like BitLocker on Windows or FileVault on macOS. Turn on automatic OS and browser security patch updates to mitigate zero-day vulnerabilities. On mobile devices, restrict background app tracking and only install applications from verified official repositories.",
+            "The Internet of Things (IoT)—smart TVs, voice assistants, cameras, and smart thermostats—often ship with hardcoded default credentials and rarely receive security firmware updates. Isolate IoT devices on an independent Guest Wi-Fi VLAN so a compromised smart bulb cannot be used to pivot into your primary workstation or NAS storage.",
+            "Security is fundamentally a habit, not a product. Practice three daily disciplines: Hover before clicking to inspect actual URL destinations; automatically lock your screen whenever stepping away (Windows Key + L); and maintain the Principle of Least Privilege by using standard non-administrator accounts for daily tasks.",
+            "Preparation guarantees resilience when breaches occur. Follow the golden 3-2-1 Backup Strategy: Maintain 3 separate copies of critical data, across 2 different storage media types (such as local SSD and cloud), with 1 copy stored completely offsite or air-gapped from your primary local network.",
+            "For private communications, insist on End-to-End Encryption (E2EE). In true E2EE systems like Signal, cryptographic keys reside exclusively on endpoints, meaning service providers and network intermediaries have zero mathematical capability to inspect message content. Beware of cloud backups that store unencrypted decryption keys.",
+            "Looking forward: Emerging Threats on the horizon include AI-powered Deepfakes, 3-second generative voice cloning for CEO fraud, and automated polymorphic phishing. Defense requires out-of-band verification codewords with family and colleagues, plus cryptographic authentication protocols resistant to quantum decryption.",
+            "Here is your immediate Action Plan: Today, enable 2FA on primary email and financial portals, and search your email on HaveIBeenPwned.com. This week, deploy a password manager and audit your privacy settings across major platforms. Ongoing, apply updates promptly and remain skeptical of unverified urgent communications.",
+            "In conclusion, cybersecurity is an ongoing process of awareness, hygiene, and vigilance. Thank you for your attention. We now invite any questions, thoughts, or discussion from the audience and our evaluators."
+        ];
+
+        let customSlideScripts = null;
+
+        function updateSlideScript(idx) {
+            const scripts = customSlideScripts || SLIDE_SCRIPTS;
+            const text = scripts[idx] || (idx < SLIDE_SCRIPTS.length ? SLIDE_SCRIPTS[idx] : `Presenter notes for Slide ${idx + 1}. Focus on core concepts and engage the audience.`);
+            if (slideScriptContent) {
+                slideScriptContent.textContent = text;
+                slideScriptContent.scrollTop = 0;
+            }
+        }
 
         function updateConnectionUI(state, text) {
             statusDot.className = 'status-dot ' + state;
@@ -1186,6 +1601,12 @@
                     renderSlideList();
                 }
 
+                if (data.scripts && Array.isArray(data.scripts)) {
+                    customSlideScripts = data.scripts;
+                }
+
+                updateSlideScript(currentSlideIndex);
+
                 if (typeof data.isBlackout === 'boolean') {
                     isBlackout = data.isBlackout;
                     blackoutLabel.textContent = isBlackout ? 'Resume' : 'Blank';
@@ -1338,6 +1759,175 @@
             timerToggleBtn.textContent = 'Start';
         });
 
+        // Font size adjustments for presenter script
+        if (scriptFontMinus && scriptFontPlus) {
+            scriptFontMinus.addEventListener('click', () => {
+                triggerHaptic(20);
+                scriptFontSize = Math.max(0.68, scriptFontSize - 0.08);
+                if (slideScriptContent) slideScriptContent.style.fontSize = `${scriptFontSize}rem`;
+            });
+
+            scriptFontPlus.addEventListener('click', () => {
+                triggerHaptic(20);
+                scriptFontSize = Math.min(1.4, scriptFontSize + 0.08);
+                if (slideScriptContent) slideScriptContent.style.fontSize = `${scriptFontSize}rem`;
+            });
+        }
+
+        // ============================================
+        // IN-APP CAMERA QR CODE SCANNER LOGIC
+        // ============================================
+        let html5QrScanner = null;
+        let isCameraScanning = false;
+
+        function parseRoomFromQrText(text) {
+            if (!text) return null;
+            const trimmed = text.trim();
+            try {
+                // If it's a URL (e.g. https://.../remote.html?room=sec-slide-xyz)
+                if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+                    const parsedUrl = new URL(trimmed);
+                    const roomParam = parsedUrl.searchParams.get('room');
+                    if (roomParam) return roomParam;
+                }
+            } catch(e) {}
+
+            // If it contains "room=" query param
+            const match = trimmed.match(/[?&]room=([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) return match[1];
+
+            // If it starts with sec-slide-
+            if (trimmed.toLowerCase().startsWith('sec-slide-')) {
+                return trimmed.toLowerCase();
+            }
+
+            // If it's a direct room code (e.g. 5 alphanumeric chars)
+            if (/^[a-zA-Z0-9]{4,10}$/.test(trimmed)) {
+                return 'sec-slide-' + trimmed.toLowerCase();
+            }
+
+            return null;
+        }
+
+        async function startCameraScanner() {
+            triggerHaptic(35);
+            if (qrScannerModal) qrScannerModal.classList.add('active');
+            if (scannerStatusPrompt) {
+                scannerStatusPrompt.textContent = 'Requesting camera access...';
+                scannerStatusPrompt.style.color = 'var(--text-muted)';
+            }
+
+            try {
+                if (typeof Html5Qrcode === 'undefined') {
+                    if (scannerStatusPrompt) {
+                        scannerStatusPrompt.textContent = 'QR Scanner library not loaded. Please enter code manually.';
+                        scannerStatusPrompt.style.color = 'var(--accent-red)';
+                    }
+                    return;
+                }
+
+                if (html5QrScanner && isCameraScanning) {
+                    try { await html5QrScanner.stop(); } catch(e) {}
+                    try { html5QrScanner.clear(); } catch(e) {}
+                }
+
+                html5QrScanner = new Html5Qrcode("qrScannerVideo");
+                isCameraScanning = true;
+
+                const scanConfig = {
+                    fps: 15,
+                    qrbox: { width: 220, height: 220 },
+                    aspectRatio: 1.0
+                };
+
+                const onScanSuccess = (decodedText) => {
+                    console.log('QR Code detected:', decodedText);
+                    const parsedRoom = parseRoomFromQrText(decodedText);
+                    if (parsedRoom) {
+                        triggerHaptic(60);
+                        if (scannerStatusPrompt) {
+                            scannerStatusPrompt.textContent = 'Paired successfully!';
+                            scannerStatusPrompt.style.color = 'var(--accent-green)';
+                        }
+
+                        setTimeout(() => {
+                            stopCameraScanner();
+                            connectOverlay.classList.remove('active');
+                            connectOverlayCloseBtn.style.display = 'block';
+
+                            // Clean existing connection
+                            if (conn) { try { conn.close(); } catch(e) {} }
+                            if (peer) { try { peer.destroy(); } catch(e) {} }
+
+                            initPeerConnection(parsedRoom);
+                        }, 250);
+                    } else {
+                        if (scannerStatusPrompt) {
+                            scannerStatusPrompt.textContent = 'Unrecognized QR content: ' + decodedText.substring(0, 25);
+                            scannerStatusPrompt.style.color = 'var(--accent-amber)';
+                        }
+                    }
+                };
+
+                const onScanFailure = (error) => {
+                    // Frame parse failure is normal while camera focuses
+                };
+
+                // Attempt back camera first (environment)
+                try {
+                    await html5QrScanner.start(
+                        { facingMode: "environment" },
+                        scanConfig,
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                    if (scannerStatusPrompt) {
+                        scannerStatusPrompt.textContent = 'Point camera at the QR code on your presentation screen.';
+                        scannerStatusPrompt.style.color = 'var(--text-muted)';
+                    }
+                } catch (envErr) {
+                    console.warn('Environment camera failed, enumerating cameras:', envErr);
+                    const cameras = await Html5Qrcode.getCameras();
+                    if (cameras && cameras.length > 0) {
+                        const camId = cameras[cameras.length - 1].id;
+                        await html5QrScanner.start(camId, scanConfig, onScanSuccess, onScanFailure);
+                        if (scannerStatusPrompt) {
+                            scannerStatusPrompt.textContent = 'Point camera at the QR code on your presentation screen.';
+                            scannerStatusPrompt.style.color = 'var(--text-muted)';
+                        }
+                    } else {
+                        throw envErr;
+                    }
+                }
+            } catch (err) {
+                console.error('Camera Scanner Error:', err);
+                isCameraScanning = false;
+                if (scannerStatusPrompt) {
+                    scannerStatusPrompt.textContent = 'Camera permission denied or unavailable. You can type the code manually.';
+                    scannerStatusPrompt.style.color = 'var(--accent-red)';
+                }
+            }
+        }
+
+        async function stopCameraScanner() {
+            if (html5QrScanner && isCameraScanning) {
+                try {
+                    await html5QrScanner.stop();
+                    html5QrScanner.clear();
+                } catch(e) {
+                    console.warn('Stop scanner warning:', e);
+                }
+                isCameraScanning = false;
+            }
+            if (qrScannerModal) qrScannerModal.classList.remove('active');
+        }
+
+        // Camera Scanner Triggers
+        if (topCameraScanBtn) topCameraScanBtn.addEventListener('click', startCameraScanner);
+        if (overlayScanQrBtn) overlayScanQrBtn.addEventListener('click', startCameraScanner);
+        if (scannerCloseBtn) scannerCloseBtn.addEventListener('click', stopCameraScanner);
+        if (scannerDismissBtn) scannerDismissBtn.addEventListener('click', stopCameraScanner);
+
         // Allow opening Pair Code modal anytime by clicking the Room tag or status bar
         function openCodeInputModal() {
             triggerHaptic(25);
@@ -1393,6 +1983,9 @@
                 handleManualConnect();
             }
         });
+
+        // Initialize script display for first slide
+        updateSlideScript(0);
 
         // Initialize connection if room is provided in URL or prompt
         if (targetRoom) {

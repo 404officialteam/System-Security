@@ -2325,6 +2325,32 @@
             return heading ? heading.innerText.replace(/\s+/g, ' ').trim() : `Slide ${i + 1}`;
         });
 
+        const slideScripts = [
+            "Welcome everyone. Today we are presenting 'Cybersecurity Essentials: Protecting Personal Information in the Digital Age'. As our lives migrate online, our personal identities and digital footprints are constantly exposed to emerging cyber threats. Over the next 20 minutes, our team will guide you through four foundational modules: digital identity, current attack vectors, defense in depth, and practical action steps to secure your personal and organizational digital life.",
+            "Before we begin, let's introduce the project team behind this presentation: Hann Lyhour leading Digital Identity and Data Privacy, Chhour Vengchheang covering Attack Vectors and Phishing, Seng Channara discussing Defense in Depth and Passwords, and Kheng Rotha presenting Encryption, IoT Security, and Emerging Threats. Each speaker brings focused research on their respective domain.",
+            "Here is our presentation roadmap broken down into four core modules: Module 1 covers Digital Identity & Privacy fundamentals. Module 2 breaks down the Threat Landscape and how hackers target users. Module 3 details Defense in Depth, passwords, and counter-strategies. Finally, Module 4 covers Advanced Security, Encryption, and your immediate Action Plan.",
+            "We live in an era where data is more valuable than oil. Across banking, e-commerce, healthcare, social networking, and cloud services, every interaction records an immutable data footprint. Every search query, purchase, and geolocation ping is cataloged, analyzed, and stored. This unprecedented convenience brings substantial vulnerabilities if left unprotected.",
+            "Let's define what constitutes your Digital Identity. It breaks down into: Personally Identifiable Information (PII) like national ID, full name, phone number; Financial Data such as credit cards and banking credentials; Behavioral Data like search habits and browsing histories; and Biometric Data like fingerprints and facial scans. Compromise of any layer can trigger total identity theft.",
+            "Who collects your data and why? Tech giants harvest browsing behaviors for targeted advertising algorithms. Financial institutions track payment histories for risk profiling. Data brokers actively scrape and monetize aggregated profiles without your explicit awareness. Government agencies retain census and tax records. Understanding this ecosystem helps us see where exposure points occur.",
+            "Fortunately, global regulatory frameworks have emerged to enforce user rights. The EU's GDPR grants rights to access, erase, and transfer your data with severe fines for non-compliance. California's CCPA/CPRA gives consumers power over data sales. Frameworks like HIPAA protect healthcare data, while ISO/IEC 27701 establishes privacy management benchmarks worldwide.",
+            "Now entering Module 2: The Threat Landscape. Hackers exploit three primary vectors: deception through Social Engineering and Phishing, malicious code via Ransomware and Trojans, and network exploitation through Man-in-the-Middle attacks and Credential Stuffing. Human psychology is almost always the weakest link targeted by adversaries.",
+            "Phishing accounts for over 80% of reported security incidents worldwide. Attack types range from mass email phishing with urgent fake alerts, spear phishing targeted at specific individuals, smishing via SMS, and vishing over voice calls. Always look for sender domain mismatches, artificial urgency, unusual attachments, and inspect hyperlinks before clicking.",
+            "Passwords remain your initial perimeter defense, yet 60% of users still reuse passwords across multiple services. If one low-security forum is breached, attackers use automated credential stuffing tools across high-value portals like banking and email. The solution: passphrases with high entropy or dedicated password managers like Bitwarden or 1Password.",
+            "Never rely on passwords alone. Two-Factor Authentication (2FA) requires two distinct credential categories: something you know (password) combined with something you have (hardware token or authenticator app). Hardware security keys like YubiKey and TOTP apps like Aegis or Google Authenticator are vastly superior to SMS-based 2FA, which is susceptible to SIM swapping.",
+            "Social Engineering exploits human psychology rather than software vulnerabilities. Attackers utilize pretexting, baiting, shoulder surfing, and tailgating. They weaponize emotional triggers—fear, authority, scarcity, and helpfulness—to convince employees or individuals into bypassing established security protocols.",
+            "Every online action builds your Digital Footprint. An active footprint consists of conscious posts, blog comments, and shared photos. A passive footprint consists of IP logs, device telemetry, cookies, and location metadata quietly harvested in the background. Once indexed on search engines or archived by third parties, deleting this data is virtually impossible.",
+            "Securing your social media presence is crucial. Review and restrict audience visibility on legacy posts, disable precise geotagging on photos, turn off contact-syncing permissions, and routinely audit third-party connected apps that retain OAuth tokens to your primary accounts. Remember: real-time vacation updates notify criminals that your residence is unattended.",
+            "Public Wi-Fi networks in airports, cafes, and hotels are inherently untrusted environments. Attackers on the same network can execute ARP spoofing or spin up Evil Twin rogue access points to inspect plaintext traffic. Always verify SSL certificates, avoid sensitive transactions on untrusted networks, or tunnel all traffic through a reputable encrypted VPN.",
+            "Device hardening must be implemented across all endpoints. Enable full disk encryption like BitLocker on Windows or FileVault on macOS. Turn on automatic OS and browser security patch updates to mitigate zero-day vulnerabilities. On mobile devices, restrict background app tracking and only install applications from verified official repositories.",
+            "The Internet of Things (IoT)—smart TVs, voice assistants, cameras, and smart thermostats—often ship with hardcoded default credentials and rarely receive security firmware updates. Isolate IoT devices on an independent Guest Wi-Fi VLAN so a compromised smart bulb cannot be used to pivot into your primary workstation or NAS storage.",
+            "Security is fundamentally a habit, not a product. Practice three daily disciplines: Hover before clicking to inspect actual URL destinations; automatically lock your screen whenever stepping away (Windows Key + L); and maintain the Principle of Least Privilege by using standard non-administrator accounts for daily tasks.",
+            "Preparation guarantees resilience when breaches occur. Follow the golden 3-2-1 Backup Strategy: Maintain 3 separate copies of critical data, across 2 different storage media types (such as local SSD and cloud), with 1 copy stored completely offsite or air-gapped from your primary local network.",
+            "For private communications, insist on End-to-End Encryption (E2EE). In true E2EE systems like Signal, cryptographic keys reside exclusively on endpoints, meaning service providers and network intermediaries have zero mathematical capability to inspect message content. Beware of cloud backups that store unencrypted decryption keys.",
+            "Looking forward: Emerging Threats on the horizon include AI-powered Deepfakes, 3-second generative voice cloning for CEO fraud, and automated polymorphic phishing. Defense requires out-of-band verification codewords with family and colleagues, plus cryptographic authentication protocols resistant to quantum decryption.",
+            "Here is your immediate Action Plan: Today, enable 2FA on primary email and financial portals, and search your email on HaveIBeenPwned.com. This week, deploy a password manager and audit your privacy settings across major platforms. Ongoing, apply updates promptly and remain skeptical of unverified urgent communications.",
+            "In conclusion, cybersecurity is an ongoing process of awareness, hygiene, and vigilance. Thank you for your attention. We now invite any questions, thoughts, or discussion from the audience and our evaluators."
+        ];
+
         function getSlideFromHash() {
             const hash = window.location.hash.replace('#', '');
             const num = parseInt(hash, 10);
@@ -2352,6 +2378,7 @@
                 totalSlides: totalSlides,
                 title: slideTitles[currentSlide] || `Slide ${currentSlide + 1}`,
                 slides: slideTitles,
+                scripts: slideScripts,
                 isBlackout: isBlackout,
                 isFullscreen: isDeckFullscreen()
             };
@@ -2588,6 +2615,7 @@
                             totalSlides: totalSlides,
                             title: slideTitles[currentSlide] || `Slide ${currentSlide + 1}`,
                             slides: slideTitles,
+                            scripts: slideScripts,
                             isBlackout: isBlackout,
                             isFullscreen: isDeckFullscreen()
                         });
