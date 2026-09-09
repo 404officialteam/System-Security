@@ -1506,11 +1506,29 @@
             }
         }
 
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 3;
+        let connectionAttemptTimer = null;
+
         function scheduleReconnect(delay = 1800) {
             if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            reconnectAttempts++;
+            if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+                console.log('Max reconnect attempts reached. Opening room input modal.');
+                updateConnectionUI('disconnected', 'Deck Not Found');
+                if (scannerStatusPrompt) {
+                    scannerStatusPrompt.textContent = 'Could not find slide deck. Please scan QR or enter 5-letter code.';
+                    scannerStatusPrompt.style.color = 'var(--accent-amber)';
+                }
+                setTimeout(() => {
+                    openCodeInputModal();
+                }, 400);
+                return;
+            }
+
             reconnectTimeout = setTimeout(() => {
                 if (targetRoom && (!conn || !conn.open)) {
-                    console.log('Auto-reconnecting to master...');
+                    console.log(`Auto-reconnecting to master (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
                     updateConnectionUI('', 'Reconnecting...');
                     connectToMaster();
                 }
@@ -1522,6 +1540,15 @@
             if (!targetRoom.startsWith('sec-slide-')) {
                 targetRoom = 'sec-slide-' + targetRoom;
             }
+
+            reconnectAttempts = 0;
+
+            // Sync URL with target room without page reload
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('room', targetRoom);
+                window.history.replaceState({ room: targetRoom }, '', url.toString());
+            } catch(e) {}
 
             if (roomBadgeText) {
                 roomBadgeText.textContent = 'ROOM: ' + targetRoom.replace('sec-slide-', '').toUpperCase();
@@ -1562,9 +1589,8 @@
                             scannerStatusPrompt.style.color = '#ff3366';
                         }
                         setTimeout(() => {
-                            connectOverlay.classList.add('active');
-                            connectOverlayCloseBtn.style.display = 'block';
-                        }, 1200);
+                            openCodeInputModal();
+                        }, 500);
                     } else {
                         updateConnectionUI('disconnected', 'Signal Error');
                         scheduleReconnect(2500);
@@ -1583,9 +1609,28 @@
                 try { conn.close(); } catch(e) {}
             }
 
-            conn = peer.connect(targetRoom);
+            if (connectionAttemptTimer) clearTimeout(connectionAttemptTimer);
+
+            // Set 5.5s timeout if WebRTC signaling handshake stalls
+            connectionAttemptTimer = setTimeout(() => {
+                if (!conn || !conn.open) {
+                    console.warn('Connection handshake timed out.');
+                    updateConnectionUI('disconnected', 'Timeout');
+                    scheduleReconnect(1200);
+                }
+            }, 5500);
+
+            try {
+                conn = peer.connect(targetRoom);
+            } catch(e) {
+                console.error('peer.connect error:', e);
+                scheduleReconnect(1500);
+                return;
+            }
 
             conn.on('open', () => {
+                if (connectionAttemptTimer) clearTimeout(connectionAttemptTimer);
+                reconnectAttempts = 0;
                 console.log('Connected to Master presentation!');
                 updateConnectionUI('connected', 'Connected');
                 triggerHaptic(40);
@@ -1606,6 +1651,7 @@
             });
 
             conn.on('close', () => {
+                if (connectionAttemptTimer) clearTimeout(connectionAttemptTimer);
                 console.log('Connection closed');
                 stopHeartbeat();
                 updateConnectionUI('disconnected', 'Reconnecting...');
@@ -1613,6 +1659,7 @@
             });
 
             conn.on('error', (err) => {
+                if (connectionAttemptTimer) clearTimeout(connectionAttemptTimer);
                 console.warn('Connection error, retrying:', err);
                 stopHeartbeat();
                 updateConnectionUI('disconnected', 'Reconnecting...');

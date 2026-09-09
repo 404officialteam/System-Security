@@ -2534,7 +2534,14 @@
         // -------------------------------------------------------------
         // WebRTC Serverless Phone Remote Control via PeerJS
         // -------------------------------------------------------------
-        const rawCode = Math.random().toString(36).substring(2, 7).toLowerCase();
+        let rawCode = '';
+        try {
+            rawCode = sessionStorage.getItem('sec_slide_room_code') || '';
+        } catch(e) {}
+        if (!rawCode || rawCode.length < 4) {
+            rawCode = Math.random().toString(36).substring(2, 7).toLowerCase();
+            try { sessionStorage.setItem('sec_slide_room_code', rawCode); } catch(e) {}
+        }
         const peerRoomId = 'sec-slide-' + rawCode;
         const displayCode = rawCode.toUpperCase();
         roomCodeDisplay.textContent = displayCode;
