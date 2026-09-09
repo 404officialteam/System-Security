@@ -2393,12 +2393,27 @@
         }
 
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.error(`Error enabling fullscreen: ${err.message}`);
-                });
+            const doc = document;
+            const docEl = doc.documentElement;
+            const isFull = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+            if (!isFull) {
+                const requestFn = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+                if (requestFn) {
+                    const res = requestFn.call(docEl);
+                    if (res && res.catch) {
+                        res.catch(err => {
+                            console.warn('Browser requires user interaction on presentation window to go fullscreen:', err);
+                            showToast('🖥️ Click anywhere on presentation to allow Fullscreen (or press F)', 4000);
+                        });
+                    }
+                }
             } else {
-                document.exitFullscreen();
+                const exitFn = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+                if (exitFn) {
+                    const res = exitFn.call(doc);
+                    if (res && res.catch) res.catch(() => {});
+                }
             }
         }
 
