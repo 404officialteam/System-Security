@@ -2554,6 +2554,9 @@
                     config: {
                         iceServers: [
                             { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' },
+                            { urls: 'stun:stun.cloudflare.com:3478' },
                             { urls: 'stun:global.stun.twilio.com:3478' }
                         ]
                     }
@@ -2573,10 +2576,10 @@
                         remoteStatusText.textContent = 'Phone Connected!';
                         showToast('📱 Phone Connected as Remote Controller!');
                         
-                        // Auto close QR modal when phone connects
+                        // Auto close QR modal immediately when phone connects
                         setTimeout(() => {
                             closeQRModal();
-                        }, 750);
+                        }, 500);
 
                         // Send current state to phone
                         conn.send({
@@ -2592,6 +2595,11 @@
 
                     conn.on('data', (data) => {
                         if (!data) return;
+
+                        if (data.type === 'PING') {
+                            try { conn.send({ type: 'PONG' }); } catch(e) {}
+                            return;
+                        }
 
                         if (data.type === 'NAV') {
                             if (data.action === 'NEXT') nextSlide();

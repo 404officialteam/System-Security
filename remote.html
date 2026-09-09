@@ -1037,8 +1037,52 @@
             return false;
         }
 
+        const ICE_CONFIG = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun.cloudflare.com:3478' },
+                { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+        };
+
+        let reconnectTimeout = null;
+        let heartbeatInterval = null;
+
+        function startHeartbeat() {
+            stopHeartbeat();
+            heartbeatInterval = setInterval(() => {
+                if (conn && conn.open) {
+                    try { conn.send({ type: 'PING' }); } catch(e) {}
+                }
+            }, 3500);
+        }
+
+        function stopHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        }
+
+        function scheduleReconnect(delay = 1800) {
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            reconnectTimeout = setTimeout(() => {
+                if (targetRoom && (!conn || !conn.open)) {
+                    console.log('Auto-reconnecting to master...');
+                    updateConnectionUI('', 'Reconnecting...');
+                    connectToMaster();
+                }
+            }, delay);
+        }
+
         function initPeerConnection(roomId) {
-            targetRoom = roomId.trim();
+            targetRoom = roomId.trim().toLowerCase();
+            if (!targetRoom.startsWith('sec-slide-')) {
+                targetRoom = 'sec-slide-' + targetRoom;
+            }
+
             if (roomBadgeText) {
                 roomBadgeText.textContent = 'ROOM: ' + targetRoom.replace('sec-slide-', '').toUpperCase();
             } else {
@@ -1050,14 +1094,13 @@
             const phonePeerId = 'phone-' + Math.random().toString(36).substring(2, 8);
             
             try {
+                if (peer) {
+                    try { peer.destroy(); } catch(e) {}
+                }
+
                 peer = new Peer(phonePeerId, {
                     debug: 1,
-                    config: {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:global.stun.twilio.com:3478' }
-                        ]
-                    }
+                    config: ICE_CONFIG
                 });
 
                 peer.on('open', (id) => {
@@ -1073,6 +1116,7 @@
                 peer.on('error', (err) => {
                     console.error('Peer error:', err);
                     updateConnectionUI('disconnected', 'Signal Error');
+                    scheduleReconnect(2500);
                 });
             } catch(e) {
                 console.error(e);
@@ -1083,31 +1127,44 @@
         function connectToMaster() {
             if (!peer || !targetRoom) return;
 
+            if (conn) {
+                try { conn.close(); } catch(e) {}
+            }
+
             conn = peer.connect(targetRoom, { reliable: true });
 
             conn.on('open', () => {
                 console.log('Connected to Master presentation!');
                 updateConnectionUI('connected', 'Connected');
-                triggerHaptic(50);
-                // Request initial status
+                triggerHaptic(40);
+                startHeartbeat();
+
+                // Request initial status immediately and verify
                 sendCommand({ type: 'REQ_STATUS' });
+                setTimeout(() => {
+                    if (currentSlideIndex === 0 && slideTitlePreview.textContent.includes('Loading')) {
+                        sendCommand({ type: 'REQ_STATUS' });
+                    }
+                }, 600);
             });
 
             conn.on('data', (data) => {
+                if (data.type === 'PONG') return;
                 handleMasterMessage(data);
             });
 
             conn.on('close', () => {
                 console.log('Connection closed');
-                updateConnectionUI('disconnected', 'Disconnected');
-                setTimeout(() => {
-                    if (targetRoom) connectToMaster();
-                }, 3000);
+                stopHeartbeat();
+                updateConnectionUI('disconnected', 'Reconnecting...');
+                scheduleReconnect(1500);
             });
 
             conn.on('error', (err) => {
-                console.error('Conn error:', err);
-                updateConnectionUI('disconnected', 'Conn Lost');
+                console.warn('Connection error, retrying:', err);
+                stopHeartbeat();
+                updateConnectionUI('disconnected', 'Reconnecting...');
+                scheduleReconnect(1500);
             });
         }
 
