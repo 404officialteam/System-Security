@@ -1246,7 +1246,7 @@
             </div>
             <div class="meta-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                <span>02 - Sep - 2026</span>
+                <span>09 - Sep - 2026</span>
             </div>
         </div>
     </section>
@@ -2653,11 +2653,23 @@
                 masterPeer.on('connection', (conn) => {
                     activeRemoteConns.push(conn);
 
+                    function updatePhoneCountUI() {
+                        const count = activeRemoteConns.length;
+                        if (count > 1) {
+                            remoteStatusText.textContent = `${count} Phones Connected!`;
+                        } else if (count === 1) {
+                            remoteStatusText.textContent = 'Phone Connected!';
+                        } else {
+                            qrStatusDot.classList.remove('connected');
+                            remoteStatusText.textContent = 'Waiting for phone...';
+                        }
+                    }
+
                     function handleConnOpen() {
                         console.log('Phone connected via WebRTC!');
                         qrStatusDot.classList.add('connected');
-                        remoteStatusText.textContent = 'Phone Connected!';
-                        showToast('📱 Phone Connected as Remote Controller!');
+                        updatePhoneCountUI();
+                        showToast(`📱 Phone Connected (${activeRemoteConns.length} active)!`);
                         
                         // Auto close QR modal immediately when phone connects
                         setTimeout(() => {
@@ -2717,9 +2729,8 @@
 
                     conn.on('close', () => {
                         activeRemoteConns = activeRemoteConns.filter(c => c !== conn);
+                        updatePhoneCountUI();
                         if (activeRemoteConns.length === 0) {
-                            qrStatusDot.classList.remove('connected');
-                            remoteStatusText.textContent = 'Waiting for phone...';
                             laserPointer.classList.remove('active');
                             showToast('⚠️ Phone Remote Disconnected', 2500);
                         }
@@ -2730,25 +2741,25 @@
                     });
                 });
 
-                peer.on('disconnected', () => {
+                masterPeer.on('disconnected', () => {
                     console.log('Master peer disconnected from signaling server, reconnecting...');
-                    try { peer.reconnect(); } catch(e) {}
+                    try { masterPeer.reconnect(); } catch(e) {}
                     setTimeout(() => {
-                        if (peer && (peer.disconnected || peer.destroyed)) {
+                        if (masterPeer && (masterPeer.disconnected || masterPeer.destroyed)) {
                             try { 
-                                peer.destroy();
+                                masterPeer.destroy();
                                 setupPeer(); 
                             } catch(e) {}
                         }
                     }, 4000);
                 });
 
-                peer.on('error', (err) => {
+                masterPeer.on('error', (err) => {
                     console.error('Master peer error:', err);
                     remoteStatusText.textContent = 'Signaling reconnecting...';
                     setTimeout(() => {
-                        if (peer && peer.disconnected) {
-                            try { peer.reconnect(); } catch(e) {}
+                        if (masterPeer && masterPeer.disconnected) {
+                            try { masterPeer.reconnect(); } catch(e) {}
                         }
                     }, 2000);
                 });
