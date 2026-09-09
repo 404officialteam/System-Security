@@ -2532,27 +2532,37 @@
         // -------------------------------------------------------------
         // WebRTC Serverless Phone Remote Control via PeerJS
         // -------------------------------------------------------------
-        const urlParams = new URLSearchParams(window.location.search);
-        let customCode = urlParams.get('room') || 'team404';
-        const peerRoomId = customCode.startsWith('sec-slide-') ? customCode.toLowerCase() : 'sec-slide-' + customCode.toLowerCase();
-        const displayCode = peerRoomId.replace('sec-slide-', '').toUpperCase();
-        if (roomCodeDisplay) roomCodeDisplay.textContent = displayCode;
+        let rawCode = '';
+        try { rawCode = localStorage.getItem('sec_slide_room_code') || ''; } catch(e) {}
+        if (!rawCode || rawCode.length < 4) {
+            rawCode = Math.random().toString(36).substring(2, 7).toLowerCase();
+            try { localStorage.setItem('sec_slide_room_code', rawCode); } catch(e) {}
+        }
+        let peerRoomId = 'sec-slide-' + rawCode;
 
-        // Build clean remote URL (no code needed - instant connect)
-        let remoteFullUrl = 'https://404officialteam.github.io/System-Security/remote.html';
-        try {
-            const loc = window.location;
-            const isLocal = loc.hostname === 'localhost' || loc.hostname === '127.0.0.1' || loc.protocol === 'file:';
-            if (!isLocal) {
-                let baseUrl = loc.href.split('#')[0].split('?')[0];
-                if (baseUrl.endsWith('.html')) {
-                    baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
-                } else if (!baseUrl.endsWith('/')) {
-                    baseUrl += '/';
+        // Build remote URL with automatic room link (no manual typing needed)
+        let remoteFullUrl = '';
+        function buildRemoteUrl() {
+            try {
+                const loc = window.location;
+                const isLocal = loc.hostname === 'localhost' || loc.hostname === '127.0.0.1' || loc.protocol === 'file:';
+                if (isLocal) {
+                    remoteFullUrl = 'https://404officialteam.github.io/System-Security/remote.html?room=' + peerRoomId;
+                } else {
+                    let baseUrl = loc.href.split('#')[0].split('?')[0];
+                    if (baseUrl.endsWith('.html')) {
+                        baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
+                    } else if (!baseUrl.endsWith('/')) {
+                        baseUrl += '/';
+                    }
+                    remoteFullUrl = baseUrl + 'remote.html?room=' + peerRoomId;
                 }
-                remoteFullUrl = baseUrl + 'remote.html';
+            } catch(e) {
+                remoteFullUrl = 'https://404officialteam.github.io/System-Security/remote.html?room=' + peerRoomId;
             }
-        } catch(e) {}
+            if (openRemoteTab) openRemoteTab.href = remoteFullUrl;
+        }
+        buildRemoteUrl();
 
         openRemoteTab.href = remoteFullUrl;
 
@@ -2741,6 +2751,16 @@
 
                 masterPeer.on('error', (err) => {
                     console.error('Master peer error:', err);
+                    if (err.type === 'unavailable-id') {
+                        console.warn('ID collision on broker, generating fresh ID...');
+                        rawCode = Math.random().toString(36).substring(2, 7).toLowerCase();
+                        try { localStorage.setItem('sec_slide_room_code', rawCode); } catch(e) {}
+                        peerRoomId = 'sec-slide-' + rawCode;
+                        buildRemoteUrl();
+                        generateQR();
+                        setTimeout(setupPeer, 400);
+                        return;
+                    }
                     remoteStatusText.textContent = 'Signaling reconnecting...';
                     setTimeout(() => {
                         if (masterPeer && masterPeer.disconnected) {

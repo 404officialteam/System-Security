@@ -1354,10 +1354,15 @@
             }
         }
 
-        // Room ID from URL (defaults automatically to 'sec-slide-team404' - no verification needed!)
+        // Room ID from URL (e.g. from QR scan) or remembered from previous connection
         const urlParams = new URLSearchParams(window.location.search);
-        let targetRoom = urlParams.get('room') || 'sec-slide-team404';
-        if (!targetRoom.startsWith('sec-slide-')) {
+        let targetRoom = urlParams.get('room') || '';
+        if (targetRoom) {
+            try { localStorage.setItem('last_active_remote_room', targetRoom); } catch(e) {}
+        } else {
+            try { targetRoom = localStorage.getItem('last_active_remote_room') || ''; } catch(e) {}
+        }
+        if (targetRoom && !targetRoom.startsWith('sec-slide-')) {
             targetRoom = 'sec-slide-' + targetRoom.toLowerCase();
         }
 
@@ -2147,10 +2152,13 @@
         // Initialize script display for first slide
         updateSlideScript(0);
 
-        // Connect automatically - no verification or code prompt needed!
-        connectOverlay.classList.remove('active');
-        connectOverlayCloseBtn.style.display = 'block';
-        initPeerConnection(targetRoom);
+        // Connect automatically without any code or prompt!
+        if (targetRoom) {
+            initPeerConnection(targetRoom);
+        } else {
+            updateConnectionUI('disconnected', 'Scan QR');
+            slideTitlePreview.textContent = 'Please scan presentation QR code to connect.';
+        }
     </script>
 </body>
 </html>
