@@ -1357,9 +1357,12 @@
             }
         }
 
-        // Room ID from URL
+        // Room ID from URL (defaults automatically to 'sec-slide-team404' - no verification needed!)
         const urlParams = new URLSearchParams(window.location.search);
-        let targetRoom = urlParams.get('room') || '';
+        let targetRoom = urlParams.get('room') || 'sec-slide-team404';
+        if (!targetRoom.startsWith('sec-slide-')) {
+            targetRoom = 'sec-slide-' + targetRoom.toLowerCase();
+        }
 
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
@@ -1526,15 +1529,12 @@
             if (reconnectTimeout) clearTimeout(reconnectTimeout);
             reconnectAttempts++;
             if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
-                console.log('Max reconnect attempts reached. Opening room input modal.');
-                updateConnectionUI('disconnected', 'Deck Offline');
+                console.log('Max reconnect attempts reached. Keeping retry state.');
+                updateConnectionUI('disconnected', 'Tap to Retry');
                 if (scannerStatusPrompt) {
-                    scannerStatusPrompt.textContent = 'Could not find slide deck. Please check room code or scan QR.';
+                    scannerStatusPrompt.textContent = 'Slide deck offline. Tap status to retry or scan QR.';
                     scannerStatusPrompt.style.color = 'var(--accent-amber)';
                 }
-                setTimeout(() => {
-                    openCodeInputModal();
-                }, 400);
                 return;
             }
 
@@ -2147,14 +2147,10 @@
         // Initialize script display for first slide
         updateSlideScript(0);
 
-        // Initialize connection if room is provided in URL or prompt
-        if (targetRoom) {
-            connectOverlayCloseBtn.style.display = 'block';
-            initPeerConnection(targetRoom);
-        } else {
-            connectOverlay.classList.add('active');
-            connectOverlayCloseBtn.style.display = 'none';
-        }
+        // Connect automatically - no verification or code prompt needed!
+        connectOverlay.classList.remove('active');
+        connectOverlayCloseBtn.style.display = 'block';
+        initPeerConnection(targetRoom);
     </script>
 </body>
 </html>

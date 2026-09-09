@@ -2533,41 +2533,27 @@
         // -------------------------------------------------------------
         // WebRTC Serverless Phone Remote Control via PeerJS
         // -------------------------------------------------------------
-        let rawCode = '';
-        try {
-            rawCode = localStorage.getItem('sec_slide_room_code') || sessionStorage.getItem('sec_slide_room_code') || '';
-        } catch(e) {}
-        if (!rawCode || rawCode.length < 4) {
-            rawCode = Math.random().toString(36).substring(2, 7).toLowerCase();
-            try { 
-                localStorage.setItem('sec_slide_room_code', rawCode);
-                sessionStorage.setItem('sec_slide_room_code', rawCode); 
-            } catch(e) {}
-        }
-        const peerRoomId = 'sec-slide-' + rawCode;
-        const displayCode = rawCode.toUpperCase();
+        const urlParams = new URLSearchParams(window.location.search);
+        let customCode = urlParams.get('room') || 'team404';
+        const peerRoomId = customCode.startsWith('sec-slide-') ? customCode.toLowerCase() : 'sec-slide-' + customCode.toLowerCase();
+        const displayCode = peerRoomId.replace('sec-slide-', '').toUpperCase();
         roomCodeDisplay.textContent = displayCode;
 
-        // Build remote URL
-        let remoteFullUrl = '';
+        // Build clean remote URL (no code needed - instant connect)
+        let remoteFullUrl = 'https://404officialteam.github.io/System-Security/remote.html';
         try {
             const loc = window.location;
             const isLocal = loc.hostname === 'localhost' || loc.hostname === '127.0.0.1' || loc.protocol === 'file:';
-            if (isLocal) {
-                // When running locally, point phone to live HTTPS remote controller so phone can load remote app without local network barriers
-                remoteFullUrl = 'https://404officialteam.github.io/System-Security/remote.html?room=' + peerRoomId;
-            } else {
+            if (!isLocal) {
                 let baseUrl = loc.href.split('#')[0].split('?')[0];
                 if (baseUrl.endsWith('.html')) {
                     baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
                 } else if (!baseUrl.endsWith('/')) {
                     baseUrl += '/';
                 }
-                remoteFullUrl = baseUrl + 'remote.html?room=' + peerRoomId;
+                remoteFullUrl = baseUrl + 'remote.html';
             }
-        } catch(e) {
-            remoteFullUrl = 'https://404officialteam.github.io/System-Security/remote.html?room=' + peerRoomId;
-        }
+        } catch(e) {}
 
         openRemoteTab.href = remoteFullUrl;
 
