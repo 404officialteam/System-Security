@@ -15,7 +15,7 @@
     <meta name="application-name" content="Slide Remote">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="assets/peerjs.min.js"></script>
     <script src="assets/html5-qrcode.min.js"></script>
     <style>
@@ -30,7 +30,7 @@
             --accent-amber: #ffaa00;
             --text-main: #f0f6fc;
             --text-muted: #8b9eb0;
-            --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-main: 'Outfit', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         * {
@@ -284,7 +284,9 @@
             overflow-y: auto;
             color: #e2e8f0;
             font-size: 0.86rem;
-            line-height: 1.5;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
             padding-right: 4px;
             user-select: text;
             -webkit-user-select: text;
@@ -1401,31 +1403,54 @@
         let isBlackout = false;
         let scriptFontSize = 0.86;
 
-        // Comprehensive Presenter Talking Points / Scripts for all 23 Slides
+        // Comprehensive Presenter Talking Points / Scripts for all 23 Slides (Team 404)
         const SLIDE_SCRIPTS = [
-            "Welcome everyone. Today we are presenting 'Cybersecurity Essentials: Protecting Personal Information in the Digital Age'. As our lives migrate online, our personal identities and digital footprints are constantly exposed to emerging cyber threats. Over the next 20 minutes, our team will guide you through four foundational modules: digital identity, current attack vectors, defense in depth, and practical action steps to secure your personal and organizational digital life.",
-            "Before we begin, let's introduce the project team behind this presentation: Hann Lyhour leading Digital Identity and Data Privacy, Chhour Vengchheang covering Attack Vectors and Phishing, Seng Channara discussing Defense in Depth and Passwords, and Kheng Rotha presenting Encryption, IoT Security, and Emerging Threats. Each speaker brings focused research on their respective domain.",
-            "Here is our presentation roadmap broken down into four core modules: Module 1 covers Digital Identity & Privacy fundamentals. Module 2 breaks down the Threat Landscape and how hackers target users. Module 3 details Defense in Depth, passwords, and counter-strategies. Finally, Module 4 covers Advanced Security, Encryption, and your immediate Action Plan.",
-            "We live in an era where data is more valuable than oil. Across banking, e-commerce, healthcare, social networking, and cloud services, every interaction records an immutable data footprint. Every search query, purchase, and geolocation ping is cataloged, analyzed, and stored. This unprecedented convenience brings substantial vulnerabilities if left unprotected.",
-            "Let's define what constitutes your Digital Identity. It breaks down into: Personally Identifiable Information (PII) like national ID, full name, phone number; Financial Data such as credit cards and banking credentials; Behavioral Data like search habits and browsing histories; and Biometric Data like fingerprints and facial scans. Compromise of any layer can trigger total identity theft.",
-            "Who collects your data and why? Tech giants harvest browsing behaviors for targeted advertising algorithms. Financial institutions track payment histories for risk profiling. Data brokers actively scrape and monetize aggregated profiles without your explicit awareness. Government agencies retain census and tax records. Understanding this ecosystem helps us see where exposure points occur.",
-            "Fortunately, global regulatory frameworks have emerged to enforce user rights. The EU's GDPR grants rights to access, erase, and transfer your data with severe fines for non-compliance. California's CCPA/CPRA gives consumers power over data sales. Frameworks like HIPAA protect healthcare data, while ISO/IEC 27701 establishes privacy management benchmarks worldwide.",
-            "Now entering Module 2: The Threat Landscape. Hackers exploit three primary vectors: deception through Social Engineering and Phishing, malicious code via Ransomware and Trojans, and network exploitation through Man-in-the-Middle attacks and Credential Stuffing. Human psychology is almost always the weakest link targeted by adversaries.",
-            "Phishing accounts for over 80% of reported security incidents worldwide. Attack types range from mass email phishing with urgent fake alerts, spear phishing targeted at specific individuals, smishing via SMS, and vishing over voice calls. Always look for sender domain mismatches, artificial urgency, unusual attachments, and inspect hyperlinks before clicking.",
-            "Passwords remain your initial perimeter defense, yet 60% of users still reuse passwords across multiple services. If one low-security forum is breached, attackers use automated credential stuffing tools across high-value portals like banking and email. The solution: passphrases with high entropy or dedicated password managers like Bitwarden or 1Password.",
-            "Never rely on passwords alone. Two-Factor Authentication (2FA) requires two distinct credential categories: something you know (password) combined with something you have (hardware token or authenticator app). Hardware security keys like YubiKey and TOTP apps like Aegis or Google Authenticator are vastly superior to SMS-based 2FA, which is susceptible to SIM swapping.",
-            "Social Engineering exploits human psychology rather than software vulnerabilities. Attackers utilize pretexting, baiting, shoulder surfing, and tailgating. They weaponize emotional triggers—fear, authority, scarcity, and helpfulness—to convince employees or individuals into bypassing established security protocols.",
-            "Every online action builds your Digital Footprint. An active footprint consists of conscious posts, blog comments, and shared photos. A passive footprint consists of IP logs, device telemetry, cookies, and location metadata quietly harvested in the background. Once indexed on search engines or archived by third parties, deleting this data is virtually impossible.",
-            "Securing your social media presence is crucial. Review and restrict audience visibility on legacy posts, disable precise geotagging on photos, turn off contact-syncing permissions, and routinely audit third-party connected apps that retain OAuth tokens to your primary accounts. Remember: real-time vacation updates notify criminals that your residence is unattended.",
-            "Public Wi-Fi networks in airports, cafes, and hotels are inherently untrusted environments. Attackers on the same network can execute ARP spoofing or spin up Evil Twin rogue access points to inspect plaintext traffic. Always verify SSL certificates, avoid sensitive transactions on untrusted networks, or tunnel all traffic through a reputable encrypted VPN.",
-            "Device hardening must be implemented across all endpoints. Enable full disk encryption like BitLocker on Windows or FileVault on macOS. Turn on automatic OS and browser security patch updates to mitigate zero-day vulnerabilities. On mobile devices, restrict background app tracking and only install applications from verified official repositories.",
-            "The Internet of Things (IoT)—smart TVs, voice assistants, cameras, and smart thermostats—often ship with hardcoded default credentials and rarely receive security firmware updates. Isolate IoT devices on an independent Guest Wi-Fi VLAN so a compromised smart bulb cannot be used to pivot into your primary workstation or NAS storage.",
-            "Security is fundamentally a habit, not a product. Practice three daily disciplines: Hover before clicking to inspect actual URL destinations; automatically lock your screen whenever stepping away (Windows Key + L); and maintain the Principle of Least Privilege by using standard non-administrator accounts for daily tasks.",
-            "Preparation guarantees resilience when breaches occur. Follow the golden 3-2-1 Backup Strategy: Maintain 3 separate copies of critical data, across 2 different storage media types (such as local SSD and cloud), with 1 copy stored completely offsite or air-gapped from your primary local network.",
-            "For private communications, insist on End-to-End Encryption (E2EE). In true E2EE systems like Signal, cryptographic keys reside exclusively on endpoints, meaning service providers and network intermediaries have zero mathematical capability to inspect message content. Beware of cloud backups that store unencrypted decryption keys.",
-            "Looking forward: Emerging Threats on the horizon include AI-powered Deepfakes, 3-second generative voice cloning for CEO fraud, and automated polymorphic phishing. Defense requires out-of-band verification codewords with family and colleagues, plus cryptographic authentication protocols resistant to quantum decryption.",
-            "Here is your immediate Action Plan: Today, enable 2FA on primary email and financial portals, and search your email on HaveIBeenPwned.com. This week, deploy a password manager and audit your privacy settings across major platforms. Ongoing, apply updates promptly and remain skeptical of unverified urgent communications.",
-            "In conclusion, cybersecurity is an ongoing process of awareness, hygiene, and vigilance. Thank you for your attention. We now invite any questions, thoughts, or discussion from the audience and our evaluators."
+            // Slide 1
+            "សួស្តីលោកគ្រូ អ្នកគ្រូ និងមិត្តភក្តិទាំងអស់គ្នា។ ថ្ងៃនេះពួកយើងជាក្រុម Team 404 មានកិត្តិយសក្នុងការធ្វើបទបង្ហាញអំពីប្រធានបទ “Protecting Personal Information in the Digital Age” ដែលមានន័យថា ការការពារព័ត៌មានផ្ទាល់ខ្លួនក្នុងយុគសម័យឌីជីថល។\n\nប្រធានបទនេះផ្តោតទៅលើ Security, Privacy និង Best Practices ឬនិយាយឲ្យងាយយល់ គឺយើងនឹងនិយាយអំពីរបៀបដែលយើងអាចការពារទិន្នន័យ និងគណនីរបស់យើងពីការលួច ឬការប្រើប្រាស់ដោយគ្មានការអនុញ្ញាត។\n\nសព្វថ្ងៃយើងប្រើ Internet ជារៀងរាល់ថ្ងៃ ដូចជា Facebook, Telegram, TikTok, Online Banking, Email និង Online Shopping។ ដូច្នេះព័ត៌មានរបស់យើងមានតម្លៃខ្លាំង ហើយត្រូវការការពារ។",
+            // Slide 2
+            "មុននឹងចូលទៅកាន់ខ្លឹមសារ ខ្ញុំសូមណែនាំសមាជិកក្រុមរបស់ពួកយើង។\n\nក្រុមរបស់យើងមានសមាជិក 4 នាក់គឺ៖ Hann Lyhour, Chea Sovannara, Thon Lyhor និង Seang Longhour។\n\nពួកយើងបានបែងចែកការងារជាផ្នែកៗ ដើម្បីធ្វើឲ្យប្រធានបទនេះមានភាពងាយស្រួលក្នុងការយល់ និងមានការចូលរួមពីសមាជិកទាំងអស់។",
+            // Slide 3
+            "សម្រាប់ការបង្ហាញថ្ងៃនេះ ពួកយើងបានបែងចែកជាបួនផ្នែកសំខាន់ៗ៖\n\n• ផ្នែកទីមួយ គឺ Digital Identity and Privacy ដែលនិយាយអំពី Personal Information និង Digital Identity។\n• ផ្នែកទីពីរ គឺ Threat Vectors and Defense ដែលនិយាយអំពីរបៀបដែល Cybercriminals វាយប្រហារយើង ដូចជា Phishing, Malware និង Social Engineering។\n• ផ្នែកទីបី គឺ Network and Device Defense ដែលផ្តោតលើ Wi-Fi, Devices, Smartphones និង IoT។\n• ផ្នែកទីបួន គឺ Cyber Hygiene, AI និង Action Plan ដែលបង្ហាញពីទម្លាប់ល្អៗ និងវិធីការពារខ្លួនក្នុងជីវិតប្រចាំថ្ងៃ។",
+            // Slide 4
+            "ឥឡូវនេះយើងចាប់ផ្តើមពី Data Era ឬយុគសម័យទិន្នន័យ។ Internet បានផ្លាស់ប្តូររបៀបដែលមនុស្សរស់នៅ និងធ្វើការងារ។\n\n• Banking and Finance: យើងអាចធ្វើ Online Banking និង Digital Payment។\n• Shopping and Retail: ទិញទំនិញ Online ហើយប្រព័ន្ធអាចណែនាំផលិតផលដែលសមនឹងចំណាប់អារម្មណ៍របស់យើង។\n• Healthcare: មាន Electronic Health Records និង Smart Wearables។\n• Education: មាន Online Learning និង Virtual Classroom។\n• Communication & Entertainment: ប្រើ Social Media, Messaging, Video Calling និង Streaming Services។\n\nដូច្នេះយើងអាចឃើញថា ទិន្នន័យបានក្លាយជាផ្នែកសំខាន់មួយនៃជីវិតប្រចាំថ្ងៃ។",
+            // Slide 5
+            "តើ Digital Identity ជាអ្វី?\n\nDigital Identity គឺជាព័ត៌មានដែលអាចបង្ហាញ ឬសម្គាល់ថាយើងជានរណានៅលើ Online។\n• PII: ឈ្មោះ អាសយដ្ឋាន លេខទូរស័ព្ទ Email និងថ្ងៃខែឆ្នាំកំណើត។\n• Financial Data: Bank Account និង Credit Card Information។\n• Health Information: Medical Records និង Insurance Information។\n• Digital Footprint: Browsing History, Search History, Social Media Activity និង IP Address។\n• Biometric Data: Fingerprint, Face Recognition និង Voice Pattern។\n• Behavioral Data: Shopping Habits ឬ App Usage។\n\nចំណុចសំខាន់គឺ រាល់ទិន្នន័យរបស់យើងសុទ្ធតែមានតម្លៃ ដូច្នេះយើងមិនគួរមើលរំលងការការពារទិន្នន័យផ្ទាល់ខ្លួនទេ។",
+            // Slide 6
+            "ឥឡូវយើងមើលថា តើអ្នកណាខ្លះអាចប្រមូល Data របស់យើង?\n\nមាន Technology Companies, Financial Institutions, Health Providers និង Data Brokers។\nហើយ Data អាចត្រូវបានប្រមូលតាមវិធីជាច្រើន៖ Cookies, Tracking Pixels, Device Fingerprinting, Smartphone App Permissions, Background Tracking, Social Media Interactions និង Public Databases។\n\nដូច្នេះពេលយើងប្រើ Website ឬ App មួយ យើងគួរដឹងថា តើ App នោះកំពុងស្នើសុំ Permission អ្វីខ្លះ ហើយ Data របស់យើងត្រូវបានប្រើសម្រាប់អ្វី?",
+            // Slide 7
+            "បន្ទាប់មកគឺការការពារតាមច្បាប់ (Privacy Frameworks) ដូចជា GDPR, CCPA/CPRA, PIPEDA និង HIPAA/GLBA។\n\nសិទ្ធិសំខាន់ៗរបស់អ្នកប្រើប្រាស់៖\n• Right to Know: ដឹងថាគេប្រមូលព័ត៌មានអ្វីពីយើង\n• Right to Access: ស្នើសុំមើលទិន្នន័យរបស់យើង\n• Right to Delete: ស្នើឲ្យលុបទិន្នន័យក្នុងករណីដែលច្បាប់អនុញ្ញាត\n• Right to Opt-Out: បដិសេធការលក់ ឬចែករំលែកព័ត៌មាន\n• Data Portability: អាចផ្ទេរទិន្នន័យរបស់យើងទៅសេវាកម្មផ្សេង\n\nចំណុចសំខាន់គឺ Privacy មិនមែនមានន័យថា “ខ្ញុំគ្មានអ្វីត្រូវលាក់” ទេ។ Privacy គឺជាសិទ្ធិរបស់យើងក្នុងការគ្រប់គ្រងព័ត៌មានរបស់ខ្លួន។",
+            // Slide 8
+            "ឥឡូវយើងចូលទៅផ្នែកទីពីរ គឺ Threats។ វិធីដែល Hacker ប្រើដើម្បីវាយប្រហារមានច្រើន៖\n\n1. Phishing: ផ្ញើ Message ឬ Website ក្លែងក្លាយ ដើម្បីបញ្ឆោតឲ្យយើងបញ្ចូល Password ឬព័ត៌មានសំខាន់។\n2. Malware & Ransomware: Software បង្កគ្រោះថ្នាក់ដល់ Device ឬ Encrypt Files ទាមទារប្រាក់ Ransom។\n3. Man-in-the-Middle Attack: លួចស្តាប់ ឬស្ទាក់យក Communication នៅលើ Network គ្មានសុវត្ថិភាព។\n4. Social Engineering: ប្រើ Psychology ដើម្បីបញ្ឆោតមនុស្សឲ្យធ្វើអ្វីមួយដែលប៉ះពាល់ដល់ Security។\n\nនេះបង្ហាញថា Security មិនមែនពឹងផ្អែកតែលើ Technology ទេ ប៉ុន្តែមនុស្សក៏ជាផ្នែកសំខាន់មួយដែរ។",
+            // Slide 9
+            "ក្នុងចំណោមការវាយប្រហារទាំងនេះ Phishing គឺជារឿងដែលយើងជួបញឹកញាប់បំផុត។\n\nទម្រង់ Phishing:\n• Email Phishing: ផ្ញើ Email ក្លែងក្លាយទៅមនុស្សជាច្រើន\n• Spear Phishing: ផ្តោតទៅលើ Victim ជាក់លាក់ មាន Message ច្បាស់លាស់\n• Smishing & Vishing: Phishing តាម SMS និង Voice Call\n\nរបៀបសម្គាល់៖ ប្រុងប្រយ័ត្នចំពោះ Message មាន Urgency ខ្លាំង, Email Address មិនធម្មតា, Link មិនស្គាល់, Attachment មិនរំពឹងទុក ឬស្នើសុំ Password។ កុំចុចភ្លាមៗ! ឈប់មួយភ្លែត ហើយ Verify ជាមុន។",
+            // Slide 10
+            "ការការពារគណនីរបស់យើងចាប់ផ្តើមពី Password Security។\n\nកំហុសទូទៅ៖ ប្រើ Password ដូចគ្នាគ្រប់ Website, ប្រើពាក្យងាយៗដូចជា “123456” ឬ “password”, ប្រើ Birthday ឬឈ្មោះសត្វចិញ្ចឹម។\n\nវិធីល្អ៖ ប្រើ Password Manager, បង្កើត Long Passphrase ដែលពិបាកទាយ ហើយសំខាន់បំផុតគឺ Enable Multi-Factor Authentication (MFA)។ Password ខ្លីងាយស្រួល crack ភ្លាមៗ ចំណែក Passphrase វែង និង Random មានភាពរឹងមាំខ្លាំង។",
+            // Slide 11
+            "ឥឡូវយើងមកដល់ 2FA — Two-Factor Authentication។ គោលគំនិតគឺមិនពឹងលើ Password តែមួយទេ៖\n\n• Something you KNOW (Password)\n• Something you HAVE (Phone ឬ Security Key)\n\nជម្រើសការពារ៖\n1. Hardware Security Key (កម្រិតការពារខ្ពស់បំផុត)\n2. Authenticator App (ល្អខ្លាំង និងងាយស្រួល)\n3. SMS 2FA (មានហានិភ័យ SIM Swapping ដែល Hacker បោក Telecom Provider យកលេខទូរស័ព្ទ)\n\nប្រសិនបើ Service ផ្តល់ Authenticator App យើងគួរជ្រើសរើសប្រើវាជំនួស SMS។",
+            // Slide 12
+            "ទោះបីយើងមាន Technology ល្អប៉ុណ្ណាក៏ដោយ ក៏មនុស្សនៅតែជាផ្នែកសំខាន់នៃ Security។\n\nSocial Engineering Tactics:\n• Pretexting: បង្កើតរឿងរ៉ាវក្លែងក្លាយឲ្យ Victim បញ្ចេញព័ត៌មាន\n• Baiting: ទាក់ទាញដោយប្រើ USB ឬ Fake Download\n• Quid Pro Quo: សន្យាផ្តល់ Service ឬ Gift ជាថ្នូរនឹងព័ត៌មាន\n• Tailgating: ដើរតាមមនុស្សមានសិទ្ធិចូល Restricted Area\n\nBiometrics (Fingerprint, Facial, Iris) មានទាំងភាពងាយស្រួល និង Privacy Concerns។ Security Tool មានប្រសិទ្ធភាពត្រឹមកម្រិតដែលមនុស្សប្រើវាបានត្រឹមត្រូវ។",
+            // Slide 13
+            "ឥឡូវយើងនិយាយអំពី Digital Footprint ដែលជាស្នាមទិន្នន័យដែលយើងបន្សល់ទុកពេលប្រើ Internet៖\n\n• Active Footprint: ព័ត៌មានដែលយើងចែករំលែកដោយចេតនា ដូចជា Post, Comment, Uploaded Photo\n• Passive Footprint: ត្រូវបានប្រមូលដោយស្ងាត់ៗ ដូចជា Browsing History, IP Address, Location Logs\n\nDigital Footprint មាន 4 ប្រភេទ៖ Passive, Active, Positive និង Negative។ មុន Post អ្វីមួយ យើងគួរសួរខ្លួនឯងថា៖ “បើអ្នកដទៃឃើញ វានឹងប៉ះពាល់ដល់ខ្ញុំទេ?”",
+            // Slide 14
+            "Social Media គឺជាកន្លែងដែលយើងគួរប្រុងប្រយ័ត្នខ្លាំង៖\n\n• មិនគួរចែករំលែក Location ពេល Real-time, Home Address ឬ Daily Routine ជាសាធារណៈទេ\n• មិនគួរ Accept Friend Request ពី Account មិនស្គាល់ ឬ Profile ក្លែងក្លាយ\n• ព័ត៌មាន Public អាចត្រូវបាន Data Brokers ឬ Hacker យកទៅធ្វើ Targeted Social Engineering\n\nGolden Rule:\n“Post online ដោយគិតថា មនុស្សគ្រប់គ្នាអាចមើលឃើញវា។”",
+            // Slide 15
+            "បន្ទាប់មកគឺ Network Security។\n\nPublic Wi-Fi អាចមានហានិភ័យព្រោះយើងមិនដឹងថា Network នោះ Configure យ៉ាងណាទេ៖\n• ប្រុងប្រយ័ត្នខ្ពស់ពេលធ្វើ Online Banking ឬបញ្ចូលព័ត៌មានសំខាន់\n• ពិនិត្យមើលថា Website ប្រើ HTTPS ដែរឬទេ\n• សម្រាប់ Home Router: ប្តូរ Default Admin Password ភ្លាមៗ, ប្រើ WPA3 ឬ WPA2-AES, និងបិទ WPS ប្រសិនបើមិនចាំបាច់\n\nគោលដៅគឺធ្វើឲ្យ Network របស់យើងមានសុវត្ថិភាពជាងមុន។",
+            // Slide 16
+            "ឥឡូវយើងមក Device Security៖\n\n• Computer & Laptop: Update OS ជាប្រចាំទទួល Security Patches, ប្រើ Disk Encryption (BitLocker/FileVault), ប្រើ Firewall/Antivirus, និង Screen Lock\n• Smartphone & Tablet: ទាញយក App ពី Official Store (Google Play / App Store), ពិនិត្យ App Permissions (Camera, Location, Contacts), ប្រើ PIN ខ្លាំង/Biometrics និងបើក Find My Device\n\nចំណុចសំខាន់៖ Update Software → Update OS → Update Firmware។",
+            // Slide 17
+            "IoT (Internet of Things) រួមមាន Smart TV, Security Camera, Smart Speaker, Thermostat និង Wearables។\n\nហានិភ័យ IoT: ឧបករណ៍ខ្លះមាន Default Password ខ្សោយ ឬគ្មាន Security Update។ បើត្រូវ Hack វាអាចក្លាយជា Botnet ឬបែកធ្លាយ Privacy តាម Camera/Mic។\n\nBest Practice: ដាក់ IoT Devices នៅលើ Guest Network ឬ Network ដាច់ដោយឡែក ដើម្បីកាត់បន្ថយហានិភ័យដល់ Main Network។",
+            // Slide 18
+            "Cybersecurity មិនមែនធ្វើតែម្តងទេ វាជា Daily Habit៖\n\n1. Hover Before Clicking (ពិនិត្យ Link)\n2. Think Before Sharing (គិតមុនចែករំលែក)\n3. Lock Screens (ចាក់សោ Device ពេលចាកចេញ)\n4. Automatic Updates (បើក Auto Update)\n5. Unique Credentials (Password ខុសៗគ្នា)\n6. Inspect Attachments (កុំបើក File គួរឲ្យសង្ស័យ)\n7. Verify HTTPS (ពិនិត្យ Website មុន Login)\n8. Audit App Permissions (ដកសិទ្ធិមិនចាំបាច់)\n9. Explicit Logout (Logout ពី Shared Computer)\n10. Enable 2FA (គ្រប់ Service ដែលអាច)",
+            // Slide 19
+            "យើងក៏ត្រូវ Prepare for the Worst ផងដែរ តាមរយៈ 3-2-1 Backup Strategy:\n\n• 3 Copies: មានទិន្នន័យ 3 ច្បាប់ (Original + Backup 2)\n• 2 Media Types: Backup លើ Storage ខុសគ្នា (Cloud + External Drive)\n• 1 Offsite: មាន Backup មួយនៅកន្លែងផ្សេង ឬ Off-site ដែលមានការការពារ\n\nEncryption: Full Drive ប្រើ BitLocker/FileVault, Individual Files ប្រើ VeraCrypt/7-Zip AES-256, និងប្រើ Chat/Email ដែលមាន Encryption។",
+            // Slide 20
+            "End-to-End Encryption (E2EE):\nគោលការណ៍គឺ Message ត្រូវបាន Encrypt នៅខាងអ្នកផ្ញើ ហើយ Decrypt នៅខាងអ្នកទទួល មានន័យថា អ្នកនៅកណ្តាល (សូម្បីតែ Company ឬ ISP) មិនអាចអាន Plaintext បានឡើយ។\n\n• Signal: E2EE ជា Default និង Open Source ទាំងស្រុង\n• WhatsApp: E2EE ជា Default សម្រាប់ Messages\n• Telegram: E2EE មានតែក្នុង Secret Chats ប៉ុណ្ណោះ មិនមែន Chat ទូទៅទាំងអស់ទេ\n\nត្រូវយល់ដឹងថា Service ណាប្រើ Encryption កម្រិតណា។",
+            // Slide 21
+            "Threats ថ្មីៗដែលកំពុងមានសារៈសំខាន់:\n\n• Deepfakes: AI បង្កើត Video/Audio ក្លែងក្លាយ — ត្រូវ Verify តាម Multiple Channels\n• Voice Cloning: AI ប្រើ Audio ខ្លីៗក្លែងសម្លេង — គ្រួសារ/ស្ថាប័នគួរមាន Safe Word/Phrase ដើម្បីបញ្ជាក់\n• AI Spear Phishing: AI សរសេរ Email បោកប្រាស់កាន់តែមានប្រសិទ្ធភាព និងពិបាកសម្គាល់\n\nត្រូវតាមដាន Technology ដូចជា Quantum Computing និង Privacy Regulation ជាប្រចាំ។",
+            // Slide 22
+            "Action Plan ចាប់ផ្តើមពីថ្ងៃនេះ:\n\n• Today: បើក 2FA លើ Email & Banking, ឆែកមើល Email ក្នុង HaveIBeenPwned.com\n• This Week: Install Password Manager, Audit Privacy Settings លើ Social Media\n• Always: Update OS ជាប្រចាំ, Verify Link គួរឲ្យសង្ស័យ\n\n“Security is not a product — it is a practice.” Security មិនមែនជាផលិតផលដែលទិញហើយចប់ទេ វាជាទម្លាប់ដែលត្រូវអនុវត្តរាល់ថ្ងៃ។",
+            // Slide 23
+            "ជាចុងក្រោយ ពួកយើងសូមអរគុណលោកគ្រូ អ្នកគ្រូ និងមិត្តភក្តិទាំងអស់ដែលបានចំណាយពេលស្តាប់បទបង្ហាញរបស់ Team 404។\n\nសង្ឃឹមថាអ្នកទាំងអស់គ្នាយល់កាន់តែច្បាស់អំពី Personal Information, Privacy, Cyber Threats និងវិធីការពារខ្លួន។\n\n“Stay Safe, Stay Aware, Stay Cyber-Secure.”\n\nឥឡូវនេះពួកយើងសូមបើកឱកាសសម្រាប់ Questions & Discussion។ សូមអញ្ជើញសួរបាន។\nThank you everyone!"
         ];
 
         let customSlideScripts = null;
