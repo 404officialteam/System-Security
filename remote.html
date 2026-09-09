@@ -1195,14 +1195,11 @@
             <span id="statusText">Connecting...</span>
         </div>
         <div class="top-bar-right">
-            <button class="btn-camera-scan" id="topCameraScanBtn" title="Scan QR Code with Camera">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span>Scan QR</span>
-            </button>
-            <div class="room-tag" id="roomBadge" title="Tap to enter or change Room Code">
-                <span id="roomBadgeText">ROOM: ---</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; letter-spacing: 1.2px;">SLIDE CONTROLLER</span>
+            <div class="room-tag" id="roomBadge" style="display: none;">
+                <span id="roomBadgeText"></span>
             </div>
+            <button class="btn-camera-scan" id="topCameraScanBtn" style="display: none;">Scan</button>
         </div>
     </div>
 
@@ -1300,8 +1297,8 @@
         </div>
     </div>
 
-    <!-- Manual Room Connect Overlay -->
-    <div class="connect-overlay" id="connectOverlay">
+    <!-- Manual Room Connect Overlay (hidden - no code needed) -->
+    <div class="connect-overlay" id="connectOverlay" style="display: none !important;">
         <div class="connect-card">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <h2 style="font-size: 1.35rem; color: #ffffff;">Pair Room Code</h2>
@@ -2070,17 +2067,20 @@
             }, 100);
         }
 
-        roomBadge.addEventListener('click', openCodeInputModal);
+        if (roomBadge) {
+            roomBadge.addEventListener('click', () => {
+                triggerHaptic(30);
+                updateConnectionUI('', 'Connecting...');
+                reconnectAttempts = 0;
+                initPeerConnection(targetRoom);
+            });
+        }
         statusDot.parentElement.addEventListener('click', () => {
             if (!conn || !conn.open) {
-                if (targetRoom) {
-                    triggerHaptic(30);
-                    updateConnectionUI('', 'Connecting...');
-                    reconnectAttempts = 0;
-                    initPeerConnection(targetRoom);
-                } else {
-                    openCodeInputModal();
-                }
+                triggerHaptic(30);
+                updateConnectionUI('', 'Connecting...');
+                reconnectAttempts = 0;
+                initPeerConnection(targetRoom);
             }
         });
 
