@@ -2663,6 +2663,11 @@
                         remoteStatusText.textContent = 'Phone Connected!';
                         showToast('📱 Phone Connected as Remote Controller!');
                         
+                        // Auto close QR modal when phone connects
+                        setTimeout(() => {
+                            closeQRModal();
+                        }, 750);
+
                         // Send current state to phone
                         conn.send({
                             type: 'STATE',
@@ -2670,7 +2675,8 @@
                             totalSlides: totalSlides,
                             title: slideTitles[currentSlide] || `Slide ${currentSlide + 1}`,
                             slides: slideTitles,
-                            isBlackout: isBlackout
+                            isBlackout: isBlackout,
+                            isFullscreen: isDeckFullscreen()
                         });
                     });
 
