@@ -103,6 +103,17 @@
             border-radius: 8px;
             letter-spacing: 1px;
             text-transform: uppercase;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .room-tag:active {
+            transform: scale(0.96);
+            background: rgba(0, 240, 255, 0.22);
+            border-color: var(--accent-cyan);
         }
 
         /* Presentation Stopwatch Timer */
@@ -787,7 +798,10 @@
             <span class="status-dot" id="statusDot"></span>
             <span id="statusText">Connecting...</span>
         </div>
-        <div class="room-tag" id="roomBadge">ROOM: ---</div>
+        <div class="room-tag" id="roomBadge" title="Tap to enter or change Room Code">
+            <span id="roomBadgeText">ROOM: ---</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
     </div>
 
     <!-- Presentation Timer -->
@@ -870,10 +884,13 @@
     <!-- Manual Room Connect Overlay -->
     <div class="connect-overlay" id="connectOverlay">
         <div class="connect-card">
-            <h2>Connect to Slide Deck</h2>
-            <p style="font-size: 0.9rem; color: var(--text-muted);">Enter the 6-character room code displayed on your presentation screen:</p>
-            <input type="text" class="connect-input" id="manualRoomInput" placeholder="SEC-XXXX" maxlength="16">
-            <button class="btn-primary" id="manualConnectBtn">Connect Now</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h2 style="font-size: 1.35rem; color: #ffffff;">Pair Room Code</h2>
+                <button class="drawer-close" id="connectOverlayCloseBtn" style="display: none;">&times;</button>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.4;">Enter the 5-character room code shown on your presentation screen (press <strong style="color:var(--accent-cyan);">R</strong> on slide deck):</p>
+            <input type="text" class="connect-input" id="manualRoomInput" placeholder="e.g. A1B2C" maxlength="16" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+            <button class="btn-primary" id="manualConnectBtn">Connect Remote</button>
         </div>
     </div>
 
@@ -892,6 +909,7 @@
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
         const roomBadge = document.getElementById('roomBadge');
+        const roomBadgeText = document.getElementById('roomBadgeText');
         const slideFraction = document.getElementById('slideFraction');
         const slideProgressFill = document.getElementById('slideProgressFill');
         const slideTitlePreview = document.getElementById('slideTitlePreview');
@@ -910,6 +928,7 @@
         const laserArea = document.getElementById('laserArea');
         const laserPadCursor = document.getElementById('laserPadCursor');
         const connectOverlay = document.getElementById('connectOverlay');
+        const connectOverlayCloseBtn = document.getElementById('connectOverlayCloseBtn');
         const manualRoomInput = document.getElementById('manualRoomInput');
         const manualConnectBtn = document.getElementById('manualConnectBtn');
 
@@ -934,7 +953,11 @@
 
         function initPeerConnection(roomId) {
             targetRoom = roomId.trim();
-            roomBadge.textContent = 'ROOM: ' + targetRoom.replace('sec-slide-', '').toUpperCase();
+            if (roomBadgeText) {
+                roomBadgeText.textContent = 'ROOM: ' + targetRoom.replace('sec-slide-', '').toUpperCase();
+            } else {
+                roomBadge.textContent = 'ROOM: ' + targetRoom.replace('sec-slide-', '').toUpperCase();
+            }
             updateConnectionUI('', 'Connecting...');
 
             // Random peer ID for phone
@@ -1200,22 +1223,69 @@
             timerToggleBtn.textContent = 'Start';
         });
 
-        // Manual room code if no URL param
+        // Allow opening Pair Code modal anytime by clicking the Room tag or status bar
+        function openCodeInputModal() {
+            triggerHaptic(25);
+            connectOverlay.classList.add('active');
+            if (targetRoom) {
+                connectOverlayCloseBtn.style.display = 'block';
+                manualRoomInput.value = targetRoom.replace('sec-slide-', '').toUpperCase();
+            } else {
+                connectOverlayCloseBtn.style.display = 'none';
+            }
+            setTimeout(() => {
+                manualRoomInput.focus();
+                manualRoomInput.select();
+            }, 100);
+        }
+
+        roomBadge.addEventListener('click', openCodeInputModal);
+        statusDot.parentElement.addEventListener('click', () => {
+            if (!conn || !conn.open) openCodeInputModal();
+        });
+
+        connectOverlayCloseBtn.addEventListener('click', () => {
+            connectOverlay.classList.remove('active');
+        });
+
+        function handleManualConnect() {
+            const raw = manualRoomInput.value.trim();
+            if (!raw) return;
+            triggerHaptic(35);
+
+            let r = raw.toLowerCase().replace(/[^a-z0-9-]/g, '');
+            if (!r.startsWith('sec-slide-')) {
+                r = 'sec-slide-' + r;
+            }
+
+            // Close existing connection cleanly if switching
+            if (conn) {
+                try { conn.close(); } catch(e) {}
+            }
+            if (peer) {
+                try { peer.destroy(); } catch(e) {}
+            }
+
+            connectOverlay.classList.remove('active');
+            connectOverlayCloseBtn.style.display = 'block';
+            initPeerConnection(r);
+        }
+
+        manualConnectBtn.addEventListener('click', handleManualConnect);
+        manualRoomInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleManualConnect();
+            }
+        });
+
+        // Initialize connection if room is provided in URL or prompt
         if (targetRoom) {
+            connectOverlayCloseBtn.style.display = 'block';
             initPeerConnection(targetRoom);
         } else {
             connectOverlay.classList.add('active');
-            manualConnectBtn.addEventListener('click', () => {
-                const val = manualRoomInput.value.trim();
-                if (val) {
-                    let r = val.toLowerCase();
-                    if (!r.startsWith('sec-slide-')) {
-                        r = 'sec-slide-' + r;
-                    }
-                    connectOverlay.classList.remove('active');
-                    initPeerConnection(r);
-                }
-            });
+            connectOverlayCloseBtn.style.display = 'none';
         }
     </script>
 </body>
